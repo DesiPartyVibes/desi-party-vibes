@@ -1,22 +1,41 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: DesiPartyHub API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: vendors
+    description: Vendor operations
+  - name: categories
+    description: Category operations
+  - name: reviews
+    description: Review operations
+  - name: bookings
+    description: Booking inquiry operations
+  - name: favorites
+    description: Favorite operations
+  - name: users
+    description: User operations
+  - name: checklist
+    description: Event checklist operations
+  - name: budget
+    description: Budget planner operations
+  - name: admin
+    description: Admin operations
+  - name: stats
+    description: Dashboard stats
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +43,646 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # AUTH
+  /auth/register:
+    post:
+      operationId: registerUser
+      tags: [users]
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserRegisterInput"
+      responses:
+        "201":
+          description: Registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+
+  /auth/login:
+    post:
+      operationId: loginUser
+      tags: [users]
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserLoginInput"
+      responses:
+        "200":
+          description: Logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+
+  /auth/logout:
+    post:
+      operationId: logoutUser
+      tags: [users]
+      summary: Logout
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /auth/me:
+    get:
+      operationId: getCurrentUser
+      tags: [users]
+      summary: Get current user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  # CATEGORIES
+  /categories:
+    get:
+      operationId: listCategories
+      tags: [categories]
+      summary: List all categories
+      responses:
+        "200":
+          description: Categories list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Category"
+
+  # VENDORS
+  /vendors:
+    get:
+      operationId: listVendors
+      tags: [vendors]
+      summary: List vendors with optional filters
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: ["string", "null"]
+        - name: city
+          in: query
+          schema:
+            type: ["string", "null"]
+        - name: minPrice
+          in: query
+          schema:
+            type: ["integer", "null"]
+        - name: maxPrice
+          in: query
+          schema:
+            type: ["integer", "null"]
+        - name: minRating
+          in: query
+          schema:
+            type: ["number", "null"]
+        - name: search
+          in: query
+          schema:
+            type: ["string", "null"]
+        - name: page
+          in: query
+          schema:
+            type: ["integer", "null"]
+        - name: limit
+          in: query
+          schema:
+            type: ["integer", "null"]
+      responses:
+        "200":
+          description: Vendors list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VendorListResponse"
+
+    post:
+      operationId: createVendor
+      tags: [vendors]
+      summary: Create a new vendor (admin or vendor user)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VendorInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Vendor"
+
+  /vendors/featured:
+    get:
+      operationId: listFeaturedVendors
+      tags: [vendors]
+      summary: Get featured/top-rated vendors for homepage
+      responses:
+        "200":
+          description: Featured vendors
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Vendor"
+
+  /vendors/{id}:
+    get:
+      operationId: getVendor
+      tags: [vendors]
+      summary: Get vendor by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Vendor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VendorDetail"
+
+    patch:
+      operationId: updateVendor
+      tags: [vendors]
+      summary: Update vendor
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VendorUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Vendor"
+
+    delete:
+      operationId: deleteVendor
+      tags: [vendors]
+      summary: Delete vendor (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  # REVIEWS
+  /vendors/{id}/reviews:
+    get:
+      operationId: listVendorReviews
+      tags: [reviews]
+      summary: Get reviews for a vendor
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Reviews
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Review"
+
+    post:
+      operationId: createReview
+      tags: [reviews]
+      summary: Submit a review
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReviewInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Review"
+
+  # BOOKINGS
+  /bookings:
+    get:
+      operationId: listBookings
+      tags: [bookings]
+      summary: List bookings for current user
+      responses:
+        "200":
+          description: Bookings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Booking"
+
+    post:
+      operationId: createBooking
+      tags: [bookings]
+      summary: Submit a booking inquiry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookingInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+
+  /bookings/{id}:
+    patch:
+      operationId: updateBookingStatus
+      tags: [bookings]
+      summary: Update booking status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookingStatusUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+
+  # FAVORITES
+  /favorites:
+    get:
+      operationId: listFavorites
+      tags: [favorites]
+      summary: Get current user's favorites
+      responses:
+        "200":
+          description: Favorites
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Vendor"
+
+  /favorites/{vendorId}:
+    post:
+      operationId: addFavorite
+      tags: [favorites]
+      summary: Add vendor to favorites
+      parameters:
+        - name: vendorId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "201":
+          description: Added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+    delete:
+      operationId: removeFavorite
+      tags: [favorites]
+      summary: Remove vendor from favorites
+      parameters:
+        - name: vendorId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Removed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  # CHECKLIST
+  /checklist:
+    get:
+      operationId: listChecklistItems
+      tags: [checklist]
+      summary: Get user's event checklist
+      responses:
+        "200":
+          description: Checklist
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ChecklistItem"
+
+    post:
+      operationId: createChecklistItem
+      tags: [checklist]
+      summary: Add checklist item
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChecklistItemInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChecklistItem"
+
+  /checklist/{id}:
+    patch:
+      operationId: updateChecklistItem
+      tags: [checklist]
+      summary: Update checklist item (toggle done, edit)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChecklistItemUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChecklistItem"
+
+    delete:
+      operationId: deleteChecklistItem
+      tags: [checklist]
+      summary: Delete checklist item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  # BUDGET
+  /budget:
+    get:
+      operationId: getBudgetPlan
+      tags: [budget]
+      summary: Get user's budget plan
+      responses:
+        "200":
+          description: Budget plan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BudgetPlan"
+
+    post:
+      operationId: upsertBudgetPlan
+      tags: [budget]
+      summary: Create or update budget plan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BudgetPlanInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BudgetPlan"
+
+  /budget/items:
+    post:
+      operationId: createBudgetItem
+      tags: [budget]
+      summary: Add a budget line item
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BudgetItemInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BudgetItem"
+
+  /budget/items/{id}:
+    patch:
+      operationId: updateBudgetItem
+      tags: [budget]
+      summary: Update a budget item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BudgetItemUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BudgetItem"
+
+    delete:
+      operationId: deleteBudgetItem
+      tags: [budget]
+      summary: Delete a budget item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  # STATS (wow endpoints)
+  /stats/homepage:
+    get:
+      operationId: getHomepageStats
+      tags: [stats]
+      summary: Homepage summary stats
+      responses:
+        "200":
+          description: Stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HomepageStats"
+
+  /stats/cities:
+    get:
+      operationId: listCities
+      tags: [stats]
+      summary: List cities with vendor counts
+      responses:
+        "200":
+          description: Cities
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CityCount"
+
+  # ADMIN
+  /admin/vendors:
+    get:
+      operationId: adminListVendors
+      tags: [admin]
+      summary: Admin list all vendors
+      responses:
+        "200":
+          description: Vendors
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Vendor"
+
+  /admin/bookings:
+    get:
+      operationId: adminListBookings
+      tags: [admin]
+      summary: Admin list all bookings
+      responses:
+        "200":
+          description: Bookings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Booking"
+
+  /admin/users:
+    get:
+      operationId: adminListUsers
+      tags: [admin]
+      summary: Admin list all users
+      responses:
+        "200":
+          description: Users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+
+  /admin/stats:
+    get:
+      operationId: getAdminStats
+      tags: [admin]
+      summary: Admin dashboard statistics
+      responses:
+        "200":
+          description: Admin stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminStats"
+
 components:
   schemas:
     HealthStatus:
@@ -31,6 +690,531 @@ components:
       properties:
         status:
           type: string
-      required:
-        - status
+      required: [status]
 
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      required: [message]
+
+    # AUTH
+    UserRegisterInput:
+      type: object
+      required: [name, email, password, role]
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+        password:
+          type: string
+        role:
+          type: string
+          enum: [user, vendor, admin]
+
+    UserLoginInput:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+
+    AuthResponse:
+      type: object
+      required: [user]
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+
+    User:
+      type: object
+      required: [id, name, email, role, createdAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum: [user, vendor, admin]
+        avatarUrl:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    # CATEGORIES
+    Category:
+      type: object
+      required: [id, name, slug, icon, description, vendorCount]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        slug:
+          type: string
+        icon:
+          type: string
+        description:
+          type: string
+        vendorCount:
+          type: integer
+
+    # VENDORS
+    Vendor:
+      type: object
+      required: [id, name, categoryId, categoryName, city, state, description, priceMin, priceMax, rating, reviewCount, imageUrl, isActive, createdAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        categoryId:
+          type: integer
+        categoryName:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        description:
+          type: string
+        priceMin:
+          type: integer
+        priceMax:
+          type: integer
+        rating:
+          type: number
+        reviewCount:
+          type: integer
+        imageUrl:
+          type: string
+        gallery:
+          type: array
+          items:
+            type: string
+        phone:
+          type: ["string", "null"]
+        email:
+          type: ["string", "null"]
+        website:
+          type: ["string", "null"]
+        isActive:
+          type: boolean
+        isFeatured:
+          type: boolean
+        createdAt:
+          type: string
+
+    VendorDetail:
+      type: object
+      required: [id, name, categoryId, categoryName, city, state, description, priceMin, priceMax, rating, reviewCount, imageUrl, isActive, createdAt, reviews]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        categoryId:
+          type: integer
+        categoryName:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        description:
+          type: string
+        longDescription:
+          type: ["string", "null"]
+        priceMin:
+          type: integer
+        priceMax:
+          type: integer
+        rating:
+          type: number
+        reviewCount:
+          type: integer
+        imageUrl:
+          type: string
+        gallery:
+          type: array
+          items:
+            type: string
+        phone:
+          type: ["string", "null"]
+        email:
+          type: ["string", "null"]
+        website:
+          type: ["string", "null"]
+        isActive:
+          type: boolean
+        isFeatured:
+          type: boolean
+        createdAt:
+          type: string
+        reviews:
+          type: array
+          items:
+            $ref: "#/components/schemas/Review"
+
+    VendorListResponse:
+      type: object
+      required: [vendors, total, page, limit]
+      properties:
+        vendors:
+          type: array
+          items:
+            $ref: "#/components/schemas/Vendor"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+
+    VendorInput:
+      type: object
+      required: [name, categoryId, city, state, description, priceMin, priceMax, imageUrl]
+      properties:
+        name:
+          type: string
+        categoryId:
+          type: integer
+        city:
+          type: string
+        state:
+          type: string
+        description:
+          type: string
+        longDescription:
+          type: string
+        priceMin:
+          type: integer
+        priceMax:
+          type: integer
+        imageUrl:
+          type: string
+        gallery:
+          type: array
+          items:
+            type: string
+        phone:
+          type: string
+        email:
+          type: string
+        website:
+          type: string
+        isFeatured:
+          type: boolean
+
+    VendorUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        categoryId:
+          type: integer
+        city:
+          type: string
+        state:
+          type: string
+        description:
+          type: string
+        longDescription:
+          type: string
+        priceMin:
+          type: integer
+        priceMax:
+          type: integer
+        imageUrl:
+          type: string
+        gallery:
+          type: array
+          items:
+            type: string
+        phone:
+          type: string
+        email:
+          type: string
+        website:
+          type: string
+        isActive:
+          type: boolean
+        isFeatured:
+          type: boolean
+
+    # REVIEWS
+    Review:
+      type: object
+      required: [id, vendorId, userId, userName, rating, comment, createdAt]
+      properties:
+        id:
+          type: integer
+        vendorId:
+          type: integer
+        userId:
+          type: integer
+        userName:
+          type: string
+        userAvatarUrl:
+          type: ["string", "null"]
+        rating:
+          type: integer
+        comment:
+          type: string
+        createdAt:
+          type: string
+
+    ReviewInput:
+      type: object
+      required: [rating, comment]
+      properties:
+        rating:
+          type: integer
+        comment:
+          type: string
+
+    # BOOKINGS
+    Booking:
+      type: object
+      required: [id, vendorId, vendorName, userId, userName, eventDate, eventType, guestCount, message, status, createdAt]
+      properties:
+        id:
+          type: integer
+        vendorId:
+          type: integer
+        vendorName:
+          type: string
+        userId:
+          type: integer
+        userName:
+          type: string
+        eventDate:
+          type: string
+        eventType:
+          type: string
+        guestCount:
+          type: integer
+        message:
+          type: string
+        status:
+          type: string
+          enum: [pending, confirmed, cancelled, completed]
+        createdAt:
+          type: string
+
+    BookingInput:
+      type: object
+      required: [vendorId, eventDate, eventType, guestCount, message]
+      properties:
+        vendorId:
+          type: integer
+        eventDate:
+          type: string
+        eventType:
+          type: string
+        guestCount:
+          type: integer
+        message:
+          type: string
+
+    BookingStatusUpdate:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [pending, confirmed, cancelled, completed]
+
+    # FAVORITES
+    FavoriteInput:
+      type: object
+      required: [vendorId]
+      properties:
+        vendorId:
+          type: integer
+
+    # CHECKLIST
+    ChecklistItem:
+      type: object
+      required: [id, userId, task, category, dueDate, isDone, createdAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        task:
+          type: string
+        category:
+          type: string
+        dueDate:
+          type: ["string", "null"]
+        isDone:
+          type: boolean
+        createdAt:
+          type: string
+
+    ChecklistItemInput:
+      type: object
+      required: [task, category]
+      properties:
+        task:
+          type: string
+        category:
+          type: string
+        dueDate:
+          type: string
+
+    ChecklistItemUpdate:
+      type: object
+      properties:
+        task:
+          type: string
+        category:
+          type: string
+        dueDate:
+          type: string
+        isDone:
+          type: boolean
+
+    # BUDGET
+    BudgetPlan:
+      type: object
+      required: [id, userId, totalBudget, eventDate, eventName, items]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        totalBudget:
+          type: integer
+        eventDate:
+          type: ["string", "null"]
+        eventName:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/BudgetItem"
+
+    BudgetPlanInput:
+      type: object
+      required: [totalBudget, eventName]
+      properties:
+        totalBudget:
+          type: integer
+        eventDate:
+          type: string
+        eventName:
+          type: string
+
+    BudgetItem:
+      type: object
+      required: [id, budgetPlanId, category, name, estimatedCost, actualCost, isPaid]
+      properties:
+        id:
+          type: integer
+        budgetPlanId:
+          type: integer
+        category:
+          type: string
+        name:
+          type: string
+        estimatedCost:
+          type: integer
+        actualCost:
+          type: ["integer", "null"]
+        isPaid:
+          type: boolean
+        notes:
+          type: ["string", "null"]
+
+    BudgetItemInput:
+      type: object
+      required: [category, name, estimatedCost]
+      properties:
+        category:
+          type: string
+        name:
+          type: string
+        estimatedCost:
+          type: integer
+        actualCost:
+          type: integer
+        notes:
+          type: string
+
+    BudgetItemUpdate:
+      type: object
+      properties:
+        category:
+          type: string
+        name:
+          type: string
+        estimatedCost:
+          type: integer
+        actualCost:
+          type: integer
+        isPaid:
+          type: boolean
+        notes:
+          type: string
+
+    # STATS
+    HomepageStats:
+      type: object
+      required: [totalVendors, totalCategories, totalCities, totalBookings]
+      properties:
+        totalVendors:
+          type: integer
+        totalCategories:
+          type: integer
+        totalCities:
+          type: integer
+        totalBookings:
+          type: integer
+
+    CityCount:
+      type: object
+      required: [city, state, count]
+      properties:
+        city:
+          type: string
+        state:
+          type: string
+        count:
+          type: integer
+
+    AdminStats:
+      type: object
+      required: [totalVendors, totalUsers, totalBookings, pendingBookings, totalReviews, vendorsByCategory]
+      properties:
+        totalVendors:
+          type: integer
+        totalUsers:
+          type: integer
+        totalBookings:
+          type: integer
+        pendingBookings:
+          type: integer
+        totalReviews:
+          type: integer
+        vendorsByCategory:
+          type: array
+          items:
+            $ref: "#/components/schemas/CategoryCount"
+
+    CategoryCount:
+      type: object
+      required: [category, count]
+      properties:
+        category:
+          type: string
+        count:
+          type: integer
