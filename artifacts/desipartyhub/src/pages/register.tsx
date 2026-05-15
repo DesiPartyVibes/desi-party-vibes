@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -32,10 +33,8 @@ export default function Register() {
   const registerUser = useRegisterUser();
   const { data: currentUser, isLoading: userLoading } = useGetCurrentUser();
 
-  if (!userLoading && currentUser) {
-    setLocation("/");
-    return null;
-  }
+  const roleParam = new URLSearchParams(window.location.search).get("role");
+  const defaultRole = roleParam === "vendor" ? "vendor" : "user";
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -43,9 +42,19 @@ export default function Register() {
       name: "",
       email: "",
       password: "",
-      role: "user",
+      role: defaultRole,
     },
   });
+
+  useEffect(() => {
+    if (!userLoading && currentUser) {
+      setLocation("/");
+    }
+  }, [currentUser, userLoading, setLocation]);
+
+  if (!userLoading && currentUser) {
+    return null;
+  }
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     registerUser.mutate(
@@ -95,31 +104,23 @@ export default function Register() {
                       <FormControl>
                         <RadioGroup
                           onValueChange={field.onChange}
-                          defaultValue={field.value}
+                          value={field.value}
                           className="grid grid-cols-2 gap-4"
                         >
-                          <FormItem>
-                            <FormControl>
-                              <div className={`relative flex cursor-pointer flex-col items-center gap-3 rounded-lg border-2 p-4 hover:border-primary/50 ${field.value === 'user' ? 'border-primary bg-primary/5' : 'border-muted'}`}>
-                                <RadioGroupItem value="user" className="sr-only" />
-                                <User className={`h-6 w-6 ${field.value === 'user' ? 'text-primary' : 'text-muted-foreground'}`} />
-                                <span className={`text-sm font-medium ${field.value === 'user' ? 'text-primary' : 'text-foreground'}`}>
-                                  Customer
-                                </span>
-                              </div>
-                            </FormControl>
-                          </FormItem>
-                          <FormItem>
-                            <FormControl>
-                              <div className={`relative flex cursor-pointer flex-col items-center gap-3 rounded-lg border-2 p-4 hover:border-primary/50 ${field.value === 'vendor' ? 'border-primary bg-primary/5' : 'border-muted'}`}>
-                                <RadioGroupItem value="vendor" className="sr-only" />
-                                <Store className={`h-6 w-6 ${field.value === 'vendor' ? 'text-primary' : 'text-muted-foreground'}`} />
-                                <span className={`text-sm font-medium ${field.value === 'vendor' ? 'text-primary' : 'text-foreground'}`}>
-                                  Vendor
-                                </span>
-                              </div>
-                            </FormControl>
-                          </FormItem>
+                          <label className={`relative flex cursor-pointer flex-col items-center gap-3 rounded-lg border-2 p-4 hover:border-primary/50 ${field.value === 'user' ? 'border-primary bg-primary/5' : 'border-muted'}`}>
+                            <RadioGroupItem value="user" className="sr-only" />
+                            <User className={`h-6 w-6 ${field.value === 'user' ? 'text-primary' : 'text-muted-foreground'}`} />
+                            <span className={`text-sm font-medium ${field.value === 'user' ? 'text-primary' : 'text-foreground'}`}>
+                              Customer
+                            </span>
+                          </label>
+                          <label className={`relative flex cursor-pointer flex-col items-center gap-3 rounded-lg border-2 p-4 hover:border-primary/50 ${field.value === 'vendor' ? 'border-primary bg-primary/5' : 'border-muted'}`}>
+                            <RadioGroupItem value="vendor" className="sr-only" />
+                            <Store className={`h-6 w-6 ${field.value === 'vendor' ? 'text-primary' : 'text-muted-foreground'}`} />
+                            <span className={`text-sm font-medium ${field.value === 'vendor' ? 'text-primary' : 'text-foreground'}`}>
+                              Vendor
+                            </span>
+                          </label>
                         </RadioGroup>
                       </FormControl>
                       <FormMessage />

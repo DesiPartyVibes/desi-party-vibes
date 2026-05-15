@@ -28,7 +28,7 @@ export function Footer() {
         <div>
           <h3 className="font-semibold mb-4 text-foreground">For Vendors</h3>
           <ul className="space-y-2 text-sm text-muted-foreground">
-            <li><Link href="/register" className="hover:text-primary">Join as Professional</Link></li>
+            <li><Link href="/register?role=vendor" className="hover:text-primary">Join as Professional</Link></li>
             <li><Link href="/login" className="hover:text-primary">Vendor Login</Link></li>
             <li><span className="cursor-not-allowed">Success Stories</span></li>
           </ul>
