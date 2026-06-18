@@ -43,7 +43,7 @@ export function Navbar() {
         <div className="flex items-center gap-6">
           <Link href="/" className="flex items-center gap-2 text-primary font-serif font-bold text-xl">
             <PartyPopper className="h-6 w-6" />
-            <span>DesiPartyHub</span>
+            <span>TheDesiPartyHub</span>
           </Link>
           <nav className="hidden md:flex gap-6">
             {navLinks.map((link) => (
