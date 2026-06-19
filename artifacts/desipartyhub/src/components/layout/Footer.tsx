@@ -39,7 +39,7 @@ export function Footer() {
                 <a href="#"><Instagram className="h-5 w-5" /></a>
               </Button>
               <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary" asChild>
-                <a href="#"><Facebook className="h-5 w-5" /></a>
+                <a href="https://www.facebook.com/profile.php?id=100067921927245" target="_blank" rel="noopener noreferrer"><Facebook className="h-5 w-5" /></a>
               </Button>
               <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary" asChild>
                 <a href="#"><Twitter className="h-5 w-5" /></a>
