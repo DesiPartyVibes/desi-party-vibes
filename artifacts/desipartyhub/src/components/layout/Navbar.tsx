@@ -60,7 +60,7 @@ export function Navbar() {
         </div>
 
         <div className="hidden md:flex items-center gap-4">
-          {!isLoading && !user && (
+          {!isLoading && !user && location !== "/login" && location !== "/register" && (
             <>
               <Button variant="ghost" asChild>
                 <Link href="/login">Log in</Link>
@@ -137,7 +137,7 @@ export function Navbar() {
             ))}
           </nav>
           <div className="border-t pt-4 flex flex-col gap-4">
-            {!isLoading && !user ? (
+            {!isLoading && !user && location !== "/login" && location !== "/register" ? (
               <>
                 <Button variant="outline" asChild className="w-full justify-start">
                   <Link href="/login" onClick={() => setMobileMenuOpen(false)}>Log in</Link>
