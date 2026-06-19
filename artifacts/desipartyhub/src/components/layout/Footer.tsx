@@ -6,7 +6,7 @@ export function Footer() {
   return (
     <footer className="bg-card border-t py-10 mt-auto">
       <div className="container mx-auto px-4">
-        <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_1fr] gap-8 items-start">
+        <div className="grid grid-cols-1 md:grid-cols-[auto_1fr_1fr_1fr] gap-8 items-start">
           <div className="flex flex-col justify-start">
             <Link href="/">
               <img src="/logo-full.png" alt="Desi Party Vibes" className="h-36 w-auto" />
