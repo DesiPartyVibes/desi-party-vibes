@@ -8,7 +8,7 @@ export function Footer() {
         <div className="space-y-4">
           <Link href="/" className="flex items-center gap-2 text-primary font-serif font-bold text-xl">
             <PartyPopper className="h-6 w-6" />
-            <span>TheDesiPartyHub</span>
+            <span>Desi Party Vibes</span>
           </Link>
           <p className="text-sm text-muted-foreground">
             The premium marketplace for Indian-American celebrations. Find trusted vendors for your perfect event.
@@ -50,7 +50,7 @@ export function Footer() {
         </div>
       </div>
       <div className="container mx-auto px-4 mt-12 pt-8 border-t text-center text-sm text-muted-foreground">
-        &copy; {new Date().getFullYear()} TheDesiPartyHub. All rights reserved.
+        &copy; {new Date().getFullYear()} Desi Party Vibes. All rights reserved.
       </div>
     </footer>
   );

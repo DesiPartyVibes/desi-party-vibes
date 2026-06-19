@@ -170,7 +170,7 @@ export default function Home() {
         <div className="container mx-auto px-4 text-center relative z-10">
           <h2 className="text-4xl font-serif font-bold mb-6">Ready to plan your celebration?</h2>
           <p className="text-lg mb-10 max-w-2xl mx-auto opacity-90">
-            Join thousands of couples and families who have found their perfect vendors on TheDesiPartyHub.
+            Join thousands of couples and families who have found their perfect vendors on Desi Party Vibes.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button size="lg" variant="secondary" className="text-secondary-foreground" asChild>
