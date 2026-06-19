@@ -1,0 +1,8 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "KoqkoF2vunEcA6wxJhN6T"
+uri = "file://artifacts/desipartyhub/public/logo.png"
+type = "image"
+title = "dpv desi party vibes logo"
