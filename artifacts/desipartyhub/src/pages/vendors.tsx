@@ -65,7 +65,7 @@ interface FilterContentProps {
   search: string;
   category: string;
   city: string;
-  categories: Array<{ id: number; name: string }> | undefined;
+  categories: Array<{ id: number; name: string; slug: string }> | undefined;
   cities: Array<{ city: string; state: string }> | undefined;
   suggestionPool: SuggestionItem[];
   onSearchChange: (v: string) => void;
@@ -198,7 +198,7 @@ function FilterContent({
           <SelectContent>
             <SelectItem value="all">All Categories</SelectItem>
             {categories?.map((c) => (
-              <SelectItem key={c.id} value={c.id.toString()}>{c.name}</SelectItem>
+              <SelectItem key={c.id} value={c.slug}>{c.name}</SelectItem>
             ))}
           </SelectContent>
         </Select>
