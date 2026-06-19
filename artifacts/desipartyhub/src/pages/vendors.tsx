@@ -40,13 +40,16 @@ function fuzzyScore(query: string, text: string): number {
   const t = text.toLowerCase();
   if (!q) return 0;
   if (t.includes(q)) return 1;
-  const qWords = q.split(/\s+/).filter(Boolean);
+  // Only score against words >= 2 chars; single chars are treated as "still typing"
+  const qWords = q.split(/\s+/).filter((w) => w.length >= 2);
+  if (qWords.length === 0) return 0;
   const tWords = t.split(/\s+/).filter(Boolean);
   let matched = 0;
   for (const qw of qWords) {
     let best = false;
     for (const tw of tWords) {
-      if (tw.includes(qw) || qw.includes(tw)) { best = true; break; }
+      // Require query word >= 2 chars for substring match to avoid "t" matching "temple"
+      if (qw.length >= 2 && (tw.includes(qw) || qw.includes(tw))) { best = true; break; }
       const maxDist = qw.length <= 3 ? 0 : qw.length <= 5 ? 1 : 2;
       if (levenshtein(qw, tw) <= maxDist) { best = true; break; }
     }
