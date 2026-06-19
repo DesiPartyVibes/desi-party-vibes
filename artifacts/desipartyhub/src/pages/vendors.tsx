@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, SlidersHorizontal } from "lucide-react";
+import { Search, SlidersHorizontal, LayoutGrid } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 
@@ -63,7 +63,23 @@ function fuzzyScore(query: string, text: string): number {
   return matched / qWords.length;
 }
 
-interface SuggestionItem {
+interface VendorSuggestion {
+  kind: "vendor";
+  id: number;
+  name: string;
+  categoryName: string;
+}
+
+interface CategorySuggestion {
+  kind: "category";
+  id: number;
+  name: string;
+  slug: string;
+}
+
+type Suggestion = VendorSuggestion | CategorySuggestion;
+
+interface VendorSuggestionItem {
   id: number;
   name: string;
   categoryName: string;
@@ -75,7 +91,7 @@ interface FilterContentProps {
   city: string;
   categories: Array<{ id: number; name: string; slug: string }> | undefined;
   cities: Array<{ city: string; state: string }> | undefined;
-  suggestionPool: SuggestionItem[];
+  suggestionPool: VendorSuggestionItem[];
   onSearchChange: (v: string) => void;
   onCategoryChange: (v: string) => void;
   onCityChange: (v: string) => void;
@@ -99,12 +115,23 @@ function FilterContent({
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const suggestions: SuggestionItem[] = search.trim().length >= 1
-    ? suggestionPool
-        .map((v) => ({ ...v, score: fuzzyScore(search, v.name) }))
-        .filter((v) => v.score > 0.35)
-        .sort((a, b) => b.score - a.score)
-        .slice(0, 6)
+  const suggestions: Suggestion[] = search.trim().length >= 1
+    ? [
+        // Category matches first — clicking applies the category filter
+        ...(categories ?? [])
+          .map((c) => ({ ...c, score: fuzzyScore(search, c.name) }))
+          .filter((c) => c.score > 0.4)
+          .sort((a, b) => b.score - a.score)
+          .slice(0, 3)
+          .map((c): CategorySuggestion => ({ kind: "category", id: c.id, name: c.name, slug: c.slug })),
+        // Vendor name matches after
+        ...suggestionPool
+          .map((v) => ({ ...v, score: fuzzyScore(search, v.name) }))
+          .filter((v) => v.score > 0.35)
+          .sort((a, b) => b.score - a.score)
+          .slice(0, 5)
+          .map((v): VendorSuggestion => ({ kind: "vendor", id: v.id, name: v.name, categoryName: v.categoryName })),
+      ]
     : [];
 
   useEffect(() => {
@@ -124,6 +151,19 @@ function FilterContent({
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
+  const selectSuggestion = useCallback(
+    (s: Suggestion) => {
+      if (s.kind === "category") {
+        onCategoryChange(s.slug);
+        onSearchChange("");
+      } else {
+        onSearchChange(s.name);
+      }
+      setShowSuggestions(false);
+    },
+    [onCategoryChange, onSearchChange]
+  );
+
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
       if (!showSuggestions || suggestions.length === 0) return;
@@ -135,13 +175,12 @@ function FilterContent({
         setActiveSuggestion((i) => Math.max(i - 1, -1));
       } else if (e.key === "Enter" && activeSuggestion >= 0) {
         e.preventDefault();
-        onSearchChange(suggestions[activeSuggestion].name);
-        setShowSuggestions(false);
+        selectSuggestion(suggestions[activeSuggestion]);
       } else if (e.key === "Escape") {
         setShowSuggestions(false);
       }
     },
-    [showSuggestions, suggestions, activeSuggestion, onSearchChange]
+    [showSuggestions, suggestions, activeSuggestion, selectSuggestion]
   );
 
   const hasSuggestions = showSuggestions && suggestions.length > 0;
@@ -173,7 +212,7 @@ function FilterContent({
             >
               {suggestions.map((s, i) => (
                 <button
-                  key={s.id}
+                  key={`${s.kind}-${s.id}`}
                   type="button"
                   className={`w-full text-left px-4 py-2.5 flex items-center gap-3 transition-colors ${
                     i === activeSuggestion
@@ -182,14 +221,21 @@ function FilterContent({
                   }`}
                   onMouseDown={(e) => {
                     e.preventDefault();
-                    onSearchChange(s.name);
-                    setShowSuggestions(false);
+                    selectSuggestion(s);
                   }}
                   onMouseEnter={() => setActiveSuggestion(i)}
                 >
-                  <Search className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                  {s.kind === "category" ? (
+                    <LayoutGrid className="h-3.5 w-3.5 text-primary shrink-0" />
+                  ) : (
+                    <Search className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                  )}
                   <span className="flex-1 text-sm font-medium truncate">{s.name}</span>
-                  <span className="text-xs text-muted-foreground shrink-0">{s.categoryName}</span>
+                  {s.kind === "category" ? (
+                    <span className="text-xs font-medium text-primary shrink-0 bg-primary/10 px-1.5 py-0.5 rounded">Category</span>
+                  ) : (
+                    <span className="text-xs text-muted-foreground shrink-0">{s.categoryName}</span>
+                  )}
                 </button>
               ))}
             </div>
