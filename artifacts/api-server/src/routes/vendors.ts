@@ -58,12 +58,14 @@ router.get("/", async (req, res): Promise<void> => {
   if (maxPrice !== undefined) conditions.push(lte(vendorsTable.priceMax, maxPrice));
   if (minRating !== undefined) conditions.push(gte(vendorsTable.rating, minRating));
   if (search) {
-    conditions.push(
+    const terms = search.trim().split(/\s+/).filter(Boolean);
+    const termConditions = terms.map((term) =>
       or(
-        ilike(vendorsTable.name, `%${search}%`),
-        ilike(vendorsTable.description, `%${search}%`)
+        ilike(vendorsTable.name, `%${term}%`),
+        ilike(vendorsTable.description, `%${term}%`)
       )!
     );
+    conditions.push(or(...termConditions)!);
   }
 
   if (category) {
