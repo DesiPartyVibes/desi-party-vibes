@@ -110,6 +110,7 @@ export default function Vendors() {
   const removeFavorite = useRemoveFavorite();
 
   const vendorParams = {
+    limit: 100,
     ...(search ? { search } : {}),
     ...(category && category !== "all" ? { category } : {}),
     ...(city && city !== "all" ? { city } : {}),
