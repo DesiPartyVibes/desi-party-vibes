@@ -61,7 +61,7 @@
 
   --border: 30 20% 90%;
   --input: 30 20% 90%;
-  --ring: 28 100% 50%;
+  --ring: 22 100% 52%;
 
   --card: 0 0% 100%;
   --card-foreground: 20 50% 10%;
@@ -80,25 +80,25 @@
   --popover-foreground: 20 50% 10%;
   --popover-border: 30 20% 90%;
 
-  --primary: 28 100% 45%;
+  --primary: 22 100% 52%;
   --primary-foreground: 0 0% 100%;
 
-  --secondary: 160 84% 25%;
+  --secondary: 278 62% 42%;
   --secondary-foreground: 0 0% 100%;
 
-  --muted: 30 20% 94%;
-  --muted-foreground: 30 10% 45%;
+  --muted: 30 18% 94%;
+  --muted-foreground: 30 8% 46%;
 
-  --accent: 340 82% 40%;
-  --accent-foreground: 0 0% 100%;
+  --accent: 42 95% 50%;
+  --accent-foreground: 20 50% 10%;
 
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 100%;
 
-  --chart-1: 28 100% 50%;
-  --chart-2: 160 84% 25%;
-  --chart-3: 340 82% 40%;
-  --chart-4: 45 100% 50%;
+  --chart-1: 22 100% 52%;
+  --chart-2: 278 62% 42%;
+  --chart-3: 42 95% 50%;
+  --chart-4: 350 80% 52%;
   --chart-5: 200 80% 40%;
 
   --app-font-sans: 'Plus Jakarta Sans', 'Inter', sans-serif;
@@ -140,13 +140,13 @@
   --primary: 28 100% 55%;
   --primary-foreground: 20 50% 10%;
 
-  --secondary: 160 84% 35%;
+  --secondary: 278 62% 52%;
   --secondary-foreground: 0 0% 100%;
 
   --muted: 20 40% 15%;
   --muted-foreground: 30 10% 65%;
 
-  --accent: 340 82% 50%;
+  --accent: 42 95% 55%;
   --accent-foreground: 0 0% 100%;
 
   --destructive: 0 84% 60%;

@@ -35,8 +35,8 @@ export default function Home() {
     <Layout>
       {/* Hero Section */}
       <section className="relative w-full h-[600px] flex items-center justify-center overflow-hidden">
-        <div className="absolute inset-0 z-0" style={{background: "linear-gradient(135deg, #7B2D00 0%, #C2410C 20%, #EA580C 40%, #D97706 60%, #92400E 80%, #4A1942 100%)"}} />
-        <div className="absolute inset-0 z-0 opacity-20" style={{backgroundImage: "radial-gradient(circle at 20% 50%, #FCD34D 0%, transparent 50%), radial-gradient(circle at 80% 20%, #F9A8D4 0%, transparent 40%), radial-gradient(circle at 60% 80%, #A78BFA 0%, transparent 40%)"}} />
+        <div className="absolute inset-0 z-0" style={{background: "linear-gradient(135deg, #6B21A8 0%, #9A3412 20%, #EA5000 42%, #F97316 60%, #C2410C 78%, #581C87 100%)"}} />
+        <div className="absolute inset-0 z-0 opacity-25" style={{backgroundImage: "radial-gradient(circle at 15% 50%, #FCD34D 0%, transparent 45%), radial-gradient(circle at 85% 20%, #F9A8D4 0%, transparent 35%), radial-gradient(circle at 55% 85%, #A78BFA 0%, transparent 40%)"}} />
         <div className="absolute inset-0 z-0 opacity-10" style={{backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='1' fill-rule='evenodd'%3E%3Cpath d='M30 0 L32 10 L40 8 L35 16 L45 18 L36 22 L40 32 L30 28 L20 32 L24 22 L15 18 L25 16 L20 8 L28 10 Z'/%3E%3C/g%3E%3C/svg%3E\")"}} />
         
         <div className="relative z-20 container mx-auto px-4 text-center text-white">
