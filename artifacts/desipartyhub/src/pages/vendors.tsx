@@ -48,10 +48,15 @@ function fuzzyScore(query: string, text: string): number {
   for (const qw of qWords) {
     let best = false;
     for (const tw of tWords) {
-      // Require query word >= 2 chars for substring match to avoid "t" matching "temple"
-      if (qw.length >= 2 && (tw.includes(qw) || qw.includes(tw))) { best = true; break; }
-      const maxDist = qw.length <= 3 ? 0 : qw.length <= 5 ? 1 : 2;
-      if (levenshtein(qw, tw) <= maxDist) { best = true; break; }
+      if (qw.length <= 3) {
+        // Short query words: only prefix match so "te" hits "temple" but not "patel"
+        if (tw.startsWith(qw)) { best = true; break; }
+      } else {
+        // Longer words: substring match is precise enough
+        if (tw.includes(qw) || qw.includes(tw)) { best = true; break; }
+        const maxDist = qw.length <= 5 ? 1 : 2;
+        if (levenshtein(qw, tw) <= maxDist) { best = true; break; }
+      }
     }
     if (best) matched++;
   }
