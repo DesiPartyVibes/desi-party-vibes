@@ -10,7 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { PartyPopper, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { useState } from "react";
 
 export function Navbar() {
@@ -41,9 +41,8 @@ export function Navbar() {
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         <div className="flex items-center gap-6">
-          <Link href="/" className="flex items-center gap-2 text-primary font-serif font-bold text-xl">
-            <PartyPopper className="h-6 w-6" />
-            <span>Desi Party Vibes</span>
+          <Link href="/" className="flex items-center">
+            <img src="/logo.png" alt="Desi Party Vibes" className="h-10 w-auto" />
           </Link>
           <nav className="hidden md:flex gap-6">
             {navLinks.map((link) => (

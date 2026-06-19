@@ -1,14 +1,13 @@
 import { Link } from "wouter";
-import { PartyPopper, Instagram, Twitter, Facebook } from "lucide-react";
+import { Instagram, Twitter, Facebook } from "lucide-react";
 
 export function Footer() {
   return (
     <footer className="bg-card border-t py-12 mt-auto">
       <div className="container mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-8">
         <div className="space-y-4">
-          <Link href="/" className="flex items-center gap-2 text-primary font-serif font-bold text-xl">
-            <PartyPopper className="h-6 w-6" />
-            <span>Desi Party Vibes</span>
+          <Link href="/" className="flex items-center">
+            <img src="/logo.png" alt="Desi Party Vibes" className="h-12 w-auto" />
           </Link>
           <p className="text-sm text-muted-foreground">
             The premium marketplace for Indian-American celebrations. Find trusted vendors for your perfect event.
