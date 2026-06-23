@@ -1,5 +1,6 @@
 import { Navbar } from "./Navbar";
 import { Footer } from "./Footer";
+import { FeedbackButton } from "@/components/ui/FeedbackButton";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -7,6 +8,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <Navbar />
       <main className="flex-1 w-full flex flex-col">{children}</main>
       <Footer />
+      <FeedbackButton />
     </div>
   );
 }
