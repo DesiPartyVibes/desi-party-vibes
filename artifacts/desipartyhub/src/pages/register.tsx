@@ -21,9 +21,12 @@ import { useToast } from "@/hooks/use-toast";
 import { PartyPopper, User, Store } from "lucide-react";
 
 const formSchema = z.object({
-  name: z.string().min(2, { message: "Name must be at least 2 characters." }),
+  firstName: z.string().min(2, { message: "First name must be at least 2 characters." }),
+  lastName: z.string().min(2, { message: "Last name must be at least 2 characters." }),
   email: z.string().email({ message: "Invalid email address." }),
   password: z.string().min(6, { message: "Password must be at least 6 characters." }),
+  phone: z.string().optional(),
+  address: z.string().optional(),
   role: z.enum(["user", "vendor"], { required_error: "Please select an account type." }),
 });
 
@@ -39,9 +42,12 @@ export default function Register() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: "",
+      firstName: "",
+      lastName: "",
       email: "",
       password: "",
+      phone: "",
+      address: "",
       role: defaultRole,
     },
   });
@@ -58,7 +64,7 @@ export default function Register() {
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     registerUser.mutate(
-      { data: values },
+      { data: { ...values, name: `${values.firstName} ${values.lastName}`.trim() } as any },
       {
         onSuccess: () => {
           toast({
@@ -81,7 +87,7 @@ export default function Register() {
   return (
     <Layout>
       <div className="flex-1 flex items-center justify-center py-12 px-4 bg-muted/30">
-        <Card className="w-full max-w-md shadow-lg border-primary/10">
+        <Card className="w-full max-w-lg shadow-lg border-primary/10">
           <CardHeader className="space-y-3 text-center pb-6">
             <div className="w-12 h-12 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-2">
               <PartyPopper className="h-6 w-6" />
@@ -93,8 +99,8 @@ export default function Register() {
           </CardHeader>
           <CardContent>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+
                 <FormField
                   control={form.control}
                   name="role"
@@ -128,20 +134,35 @@ export default function Register() {
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Full Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Anjali Sharma" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="firstName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>First Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Anjali" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="lastName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Last Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Sharma" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
                 <FormField
                   control={form.control}
                   name="email"
@@ -155,7 +176,35 @@ export default function Register() {
                     </FormItem>
                   )}
                 />
-                
+
+                <FormField
+                  control={form.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Phone Number <span className="text-muted-foreground text-xs">(optional)</span></FormLabel>
+                      <FormControl>
+                        <Input placeholder="+1 (813) 555-0123" type="tel" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="address"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Address <span className="text-muted-foreground text-xs">(optional)</span></FormLabel>
+                      <FormControl>
+                        <Input placeholder="123 Main St, Tampa, FL 33601" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
                 <FormField
                   control={form.control}
                   name="password"
@@ -169,17 +218,17 @@ export default function Register() {
                     </FormItem>
                   )}
                 />
-                
-                <Button 
-                  type="submit" 
-                  className="w-full" 
+
+                <Button
+                  type="submit"
+                  className="w-full"
                   disabled={registerUser.isPending}
                 >
                   {registerUser.isPending ? "Creating account..." : "Sign up"}
                 </Button>
               </form>
             </Form>
-            
+
             <div className="mt-6 text-center text-sm">
               <span className="text-muted-foreground">Already have an account? </span>
               <Link href="/login" className="text-primary font-medium hover:underline">

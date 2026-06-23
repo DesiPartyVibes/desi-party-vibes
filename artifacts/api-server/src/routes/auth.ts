@@ -16,9 +16,12 @@ function generateToken(): string {
 }
 
 const registerSchema = z.object({
-  name: z.string().min(1),
+  firstName: z.string().min(1),
+  lastName: z.string().min(1),
   email: z.string().email(),
   password: z.string().min(6),
+  phone: z.string().optional(),
+  address: z.string().optional(),
   role: z.enum(["user", "vendor", "admin"]),
 });
 
@@ -33,7 +36,8 @@ router.post("/register", async (req, res): Promise<void> => {
     res.status(400).json({ error: "Invalid input" });
     return;
   }
-  const { name, email, password, role } = parsed.data;
+  const { firstName, lastName, email, password, phone, address, role } = parsed.data;
+  const name = `${firstName} ${lastName}`.trim();
 
   const existing = await db.select().from(usersTable).where(eq(usersTable.email, email)).limit(1);
   if (existing.length > 0) {
@@ -43,9 +47,13 @@ router.post("/register", async (req, res): Promise<void> => {
 
   const [user] = await db.insert(usersTable).values({
     name,
+    firstName,
+    lastName,
     email,
     passwordHash: hashPassword(password),
     role,
+    phone,
+    address,
   }).returning();
 
   const token = generateToken();

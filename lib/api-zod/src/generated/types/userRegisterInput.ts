@@ -8,8 +8,11 @@
 import type { UserRegisterInputRole } from './userRegisterInputRole';
 
 export interface UserRegisterInput {
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   password: string;
+  phone?: string;
+  address?: string;
   role: UserRegisterInputRole;
 }

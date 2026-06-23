@@ -23,9 +23,12 @@ export const UserRegisterInputRole = {
 } as const;
 
 export interface UserRegisterInput {
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   password: string;
+  phone?: string;
+  address?: string;
   role: UserRegisterInputRole;
 }
 

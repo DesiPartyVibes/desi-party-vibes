@@ -20,9 +20,12 @@ export const HealthCheckResponse = zod.object({
  * @summary Register a new user
  */
 export const RegisterUserBody = zod.object({
-  "name": zod.string(),
+  "firstName": zod.string(),
+  "lastName": zod.string(),
   "email": zod.string(),
   "password": zod.string(),
+  "phone": zod.string().optional(),
+  "address": zod.string().optional(),
   "role": zod.enum(['user', 'vendor', 'admin'])
 })
 
