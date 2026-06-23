@@ -20,6 +20,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import { PartyPopper, User, Store, Loader2, ArrowLeft, Smartphone, ChevronDown, Check } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const COUNTRIES = [
   { code: "+1",   flag: "🇺🇸", name: "US/Canada" },
@@ -40,6 +41,17 @@ const COUNTRIES = [
   { code: "+33",  flag: "🇫🇷", name: "France" },
   { code: "+31",  flag: "🇳🇱", name: "Netherlands" },
   { code: "+960", flag: "🇲🇻", name: "Maldives" },
+];
+
+const US_STATES = [
+  "Alabama","Alaska","Arizona","Arkansas","California","Colorado","Connecticut",
+  "Delaware","Florida","Georgia","Hawaii","Idaho","Illinois","Indiana","Iowa",
+  "Kansas","Kentucky","Louisiana","Maine","Maryland","Massachusetts","Michigan",
+  "Minnesota","Mississippi","Missouri","Montana","Nebraska","Nevada","New Hampshire",
+  "New Jersey","New Mexico","New York","North Carolina","North Dakota","Ohio",
+  "Oklahoma","Oregon","Pennsylvania","Rhode Island","South Carolina","South Dakota",
+  "Tennessee","Texas","Utah","Vermont","Virginia","Washington","West Virginia",
+  "Wisconsin","Wyoming","District of Columbia",
 ];
 
 function CountryCodePicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
@@ -84,7 +96,11 @@ const formSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
   password: z.string().min(6, { message: "Password must be at least 6 characters." }),
   phone: z.string().min(5, { message: "Enter a valid phone number." }),
-  address: z.string().optional(),
+  streetAddress: z.string().optional(),
+  unit: z.string().optional(),
+  city: z.string().optional(),
+  state: z.string().optional(),
+  zip: z.string().optional(),
   role: z.enum(["user", "vendor"], { required_error: "Please select an account type." }),
 });
 
@@ -116,7 +132,11 @@ export default function Register() {
       email: "",
       password: "",
       phone: "",
-      address: "",
+      streetAddress: "",
+      unit: "",
+      city: "",
+      state: "",
+      zip: "",
       role: roleParam === "vendor" ? "vendor" : "user",
     },
   });
@@ -185,8 +205,12 @@ export default function Register() {
     if (otpCode.length !== 6) { setOtpError("Enter the 6-digit code."); return; }
     setOtpError("");
 
+    const { streetAddress, unit, city, state, zip, ...rest } = savedValues;
+    const addressParts = [streetAddress, unit, city, state, zip].filter(Boolean);
+    const address = addressParts.length > 0 ? addressParts.join(", ") : undefined;
+
     registerUser.mutate(
-      { data: { ...savedValues, phone: savedFullPhone, otpCode } as any },
+      { data: { ...rest, address, phone: savedFullPhone, otpCode } as any },
       {
         onSuccess: () => {
           toast({ title: "Account created!", description: "Welcome to Desi Party Vibes!" });
@@ -315,18 +339,85 @@ export default function Register() {
                       )}
                     />
 
-                    {/* Address */}
-                    <FormField
-                      control={form.control}
-                      name="address"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Address <span className="text-muted-foreground text-xs">(optional)</span></FormLabel>
-                          <FormControl><Input placeholder="" {...field} /></FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    {/* Address fields */}
+                    <div className="space-y-3">
+                      <p className="text-sm font-medium leading-none">
+                        Address <span className="text-muted-foreground text-xs font-normal">(optional)</span>
+                      </p>
+
+                      <FormField
+                        control={form.control}
+                        name="streetAddress"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs text-muted-foreground">Street Address</FormLabel>
+                            <FormControl><Input placeholder="" {...field} /></FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="unit"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs text-muted-foreground">Unit or Apt</FormLabel>
+                            <FormControl><Input placeholder="" {...field} /></FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <FormField
+                          control={form.control}
+                          name="city"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs text-muted-foreground">City</FormLabel>
+                              <FormControl><Input placeholder="" {...field} /></FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="zip"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-xs text-muted-foreground">ZIP Code</FormLabel>
+                              <FormControl><Input placeholder="" inputMode="numeric" maxLength={10} {...field} /></FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      <FormField
+                        control={form.control}
+                        name="state"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs text-muted-foreground">State</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select a state" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {US_STATES.map((s) => (
+                                  <SelectItem key={s} value={s}>{s}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
 
                     {/* Password */}
                     <FormField
