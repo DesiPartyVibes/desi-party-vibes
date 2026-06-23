@@ -60,7 +60,7 @@ export function Navbar() {
         </div>
 
         <div className="hidden md:flex items-center gap-4">
-          {!isLoading && !user && location !== "/login" && location !== "/register" && (
+          {!isLoading && !user && location !== "/login" && location !== "/register" && location !== "/forgot-password" && (
             <>
               <Button variant="ghost" asChild>
                 <Link href="/login">Log in</Link>

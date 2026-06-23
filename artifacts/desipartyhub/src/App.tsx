@@ -16,6 +16,7 @@ import Checklist from "@/pages/checklist";
 import Budget from "@/pages/budget";
 import Bookings from "@/pages/bookings";
 import AdminDashboard from "@/pages/admin";
+import ForgotPassword from "@/pages/forgot-password";
 
 const queryClient = new QueryClient();
 
@@ -25,6 +26,7 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
+      <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/categories" component={Categories} />
       <Route path="/vendors" component={Vendors} />
       <Route path="/vendors/:id" component={VendorDetail} />

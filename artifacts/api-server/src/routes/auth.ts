@@ -152,6 +152,81 @@ router.post("/register", async (req, res): Promise<void> => {
   });
 });
 
+// POST /api/auth/forgot-password
+router.post("/forgot-password", async (req, res): Promise<void> => {
+  const parsed = z.object({ email: z.string().email() }).safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid email" });
+    return;
+  }
+
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.email, parsed.data.email)).limit(1);
+  if (!user || !user.phone) {
+    // Don't reveal whether email exists
+    res.json({ success: true });
+    return;
+  }
+
+  const code = generateOtp();
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+  await db.insert(phoneVerificationsTable).values({ phone: user.phone, code, expiresAt });
+
+  try {
+    await sendSms(user.phone, `Your Desi Party Vibes password reset code is: ${code}. It expires in 10 minutes.`);
+  } catch (err) {
+    req.log.error({ err }, "Failed to send password reset SMS");
+    res.status(500).json({ error: "Failed to send reset code" });
+    return;
+  }
+
+  const devMode = !process.env.TWILIO_ACCOUNT_SID;
+  res.json({ success: true, phone: user.phone, ...(devMode ? { devCode: code } : {}) });
+});
+
+// POST /api/auth/reset-password
+router.post("/reset-password", async (req, res): Promise<void> => {
+  const parsed = z.object({
+    email: z.string().email(),
+    otpCode: z.string().length(6),
+    newPassword: z.string().min(6),
+  }).safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid input" });
+    return;
+  }
+
+  const { email, otpCode, newPassword } = parsed.data;
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.email, email)).limit(1);
+  if (!user || !user.phone) {
+    res.status(400).json({ error: "Invalid or expired code" });
+    return;
+  }
+
+  const now = new Date();
+  const [verification] = await db
+    .select()
+    .from(phoneVerificationsTable)
+    .where(
+      and(
+        eq(phoneVerificationsTable.phone, user.phone),
+        eq(phoneVerificationsTable.code, otpCode),
+        eq(phoneVerificationsTable.used, false),
+        gt(phoneVerificationsTable.expiresAt, now)
+      )
+    )
+    .limit(1);
+
+  if (!verification) {
+    res.status(400).json({ error: "Invalid or expired verification code" });
+    return;
+  }
+
+  await db.update(phoneVerificationsTable).set({ used: true }).where(eq(phoneVerificationsTable.id, verification.id));
+  await db.update(usersTable).set({ passwordHash: hashPassword(newPassword) }).where(eq(usersTable.id, user.id));
+
+  res.json({ success: true });
+});
+
 router.post("/login", async (req, res): Promise<void> => {
   const parsed = loginSchema.safeParse(req.body);
   if (!parsed.success) {
