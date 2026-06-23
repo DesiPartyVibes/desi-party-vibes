@@ -1,9 +1,10 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { usersTable, sessionsTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { usersTable, sessionsTable, phoneVerificationsTable } from "@workspace/db";
+import { eq, and, gt } from "drizzle-orm";
 import { z } from "zod";
 import crypto from "crypto";
+import { sendSms } from "../lib/sms";
 
 const router = Router();
 
@@ -15,14 +16,31 @@ function generateToken(): string {
   return crypto.randomBytes(32).toString("hex");
 }
 
+function generateOtp(): string {
+  return String(Math.floor(100000 + Math.random() * 900000));
+}
+
+// Normalise phone: strip non-digits, prepend +1 if no country code
+function normalisePhone(raw: string): string {
+  const digits = raw.replace(/\D/g, "");
+  if (digits.startsWith("1") && digits.length === 11) return `+${digits}`;
+  if (digits.length === 10) return `+1${digits}`;
+  return `+${digits}`;
+}
+
+const sendOtpSchema = z.object({
+  phone: z.string().min(7),
+});
+
 const registerSchema = z.object({
   firstName: z.string().min(1),
   lastName: z.string().min(1),
   email: z.string().email(),
   password: z.string().min(6),
-  phone: z.string().optional(),
+  phone: z.string().min(7),
   address: z.string().optional(),
   role: z.enum(["user", "vendor", "admin"]),
+  otpCode: z.string().length(6),
 });
 
 const loginSchema = z.object({
@@ -30,14 +48,70 @@ const loginSchema = z.object({
   password: z.string(),
 });
 
+// POST /api/auth/send-otp
+router.post("/send-otp", async (req, res): Promise<void> => {
+  const parsed = sendOtpSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid phone number" });
+    return;
+  }
+
+  const phone = normalisePhone(parsed.data.phone);
+  const code = generateOtp();
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 min
+
+  await db.insert(phoneVerificationsTable).values({ phone, code, expiresAt });
+
+  try {
+    await sendSms(phone, `Your Desi Party Vibes verification code is: ${code}. It expires in 10 minutes.`);
+    req.log.info({ phone }, "OTP sent");
+  } catch (err) {
+    req.log.error({ err, phone }, "Failed to send OTP SMS");
+    res.status(500).json({ error: "Failed to send verification code" });
+    return;
+  }
+
+  // In dev/no-Twilio mode, return the code so it can be displayed in the UI
+  const devMode = !process.env.TWILIO_ACCOUNT_SID;
+  res.json({ success: true, ...(devMode ? { devCode: code } : {}) });
+});
+
+// POST /api/auth/register
 router.post("/register", async (req, res): Promise<void> => {
   const parsed = registerSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid input" });
     return;
   }
-  const { firstName, lastName, email, password, phone, address, role } = parsed.data;
+  const { firstName, lastName, email, password, phone: rawPhone, address, role, otpCode } = parsed.data;
+  const phone = normalisePhone(rawPhone);
   const name = `${firstName} ${lastName}`.trim();
+
+  // Verify OTP
+  const now = new Date();
+  const [verification] = await db
+    .select()
+    .from(phoneVerificationsTable)
+    .where(
+      and(
+        eq(phoneVerificationsTable.phone, phone),
+        eq(phoneVerificationsTable.code, otpCode),
+        eq(phoneVerificationsTable.used, false),
+        gt(phoneVerificationsTable.expiresAt, now)
+      )
+    )
+    .limit(1);
+
+  if (!verification) {
+    res.status(400).json({ error: "Invalid or expired verification code" });
+    return;
+  }
+
+  // Mark OTP used
+  await db
+    .update(phoneVerificationsTable)
+    .set({ used: true })
+    .where(eq(phoneVerificationsTable.id, verification.id));
 
   const existing = await db.select().from(usersTable).where(eq(usersTable.email, email)).limit(1);
   if (existing.length > 0) {

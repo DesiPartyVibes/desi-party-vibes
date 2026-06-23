@@ -31,6 +31,8 @@ export * from './listVendorsParams';
 export * from './messageResponse';
 export * from './review';
 export * from './reviewInput';
+export * from './sendOtp200';
+export * from './sendOtpInput';
 export * from './user';
 export * from './userLoginInput';
 export * from './userRegisterInput';

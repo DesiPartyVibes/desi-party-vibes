@@ -12,7 +12,8 @@ export interface UserRegisterInput {
   lastName: string;
   email: string;
   password: string;
-  phone?: string;
+  phone: string;
   address?: string;
   role: UserRegisterInputRole;
+  otpCode: string;
 }

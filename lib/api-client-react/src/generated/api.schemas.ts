@@ -13,6 +13,10 @@ export interface MessageResponse {
   message: string;
 }
 
+export interface SendOtpInput {
+  phone: string;
+}
+
 export type UserRegisterInputRole = typeof UserRegisterInputRole[keyof typeof UserRegisterInputRole];
 
 
@@ -27,9 +31,10 @@ export interface UserRegisterInput {
   lastName: string;
   email: string;
   password: string;
-  phone?: string;
+  phone: string;
   address?: string;
   role: UserRegisterInputRole;
+  otpCode: string;
 }
 
 export interface UserLoginInput {
@@ -327,6 +332,11 @@ export interface AdminStats {
   totalReviews: number;
   vendorsByCategory: CategoryCount[];
 }
+
+export type SendOtp200 = {
+  success: boolean;
+  devCode?: string;
+};
 
 export type ListVendorsParams = {
 /**

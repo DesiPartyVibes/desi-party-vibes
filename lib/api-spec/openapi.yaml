@@ -45,6 +45,31 @@ paths:
                 $ref: "#/components/schemas/HealthStatus"
 
   # AUTH
+  /auth/send-otp:
+    post:
+      operationId: sendOtp
+      tags: [users]
+      summary: Send OTP to phone number for verification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendOtpInput"
+      responses:
+        "200":
+          description: OTP sent
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success]
+                properties:
+                  success:
+                    type: boolean
+                  devCode:
+                    type: string
+
   /auth/register:
     post:
       operationId: registerUser
@@ -700,9 +725,16 @@ components:
       required: [message]
 
     # AUTH
+    SendOtpInput:
+      type: object
+      required: [phone]
+      properties:
+        phone:
+          type: string
+
     UserRegisterInput:
       type: object
-      required: [firstName, lastName, email, password, role]
+      required: [firstName, lastName, email, password, phone, role, otpCode]
       properties:
         firstName:
           type: string
@@ -719,6 +751,8 @@ components:
         role:
           type: string
           enum: [user, vendor, admin]
+        otpCode:
+          type: string
 
     UserLoginInput:
       type: object
