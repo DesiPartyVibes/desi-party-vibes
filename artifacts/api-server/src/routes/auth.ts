@@ -154,15 +154,26 @@ router.post("/register", async (req, res): Promise<void> => {
 
 // POST /api/auth/forgot-password
 router.post("/forgot-password", async (req, res): Promise<void> => {
-  const parsed = z.object({ email: z.string().email() }).safeParse(req.body);
+  const parsed = z.object({ emailOrPhone: z.string().min(4) }).safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: "Invalid email" });
+    res.status(400).json({ error: "Please enter a valid email or phone number" });
     return;
   }
 
-  const [user] = await db.select().from(usersTable).where(eq(usersTable.email, parsed.data.email)).limit(1);
+  const raw = parsed.data.emailOrPhone.trim();
+  const isEmail = /\S+@\S+\.\S+/.test(raw);
+  const normalisedPhone = normalisePhone(raw);
+
+  // Look up user by email OR phone
+  let user: typeof usersTable.$inferSelect | undefined;
+  if (isEmail) {
+    [user] = await db.select().from(usersTable).where(eq(usersTable.email, raw)).limit(1);
+  } else {
+    [user] = await db.select().from(usersTable).where(eq(usersTable.phone, normalisedPhone)).limit(1);
+  }
+
   if (!user || !user.phone) {
-    // Don't reveal whether email exists
+    // Don't reveal whether the account exists
     res.json({ success: true });
     return;
   }
@@ -180,13 +191,13 @@ router.post("/forgot-password", async (req, res): Promise<void> => {
   }
 
   const devMode = !process.env.TWILIO_ACCOUNT_SID;
-  res.json({ success: true, phone: user.phone, ...(devMode ? { devCode: code } : {}) });
+  res.json({ success: true, userId: user.id, phone: user.phone, ...(devMode ? { devCode: code } : {}) });
 });
 
 // POST /api/auth/reset-password
 router.post("/reset-password", async (req, res): Promise<void> => {
   const parsed = z.object({
-    email: z.string().email(),
+    userId: z.number(),
     otpCode: z.string().length(6),
     newPassword: z.string().min(6),
   }).safeParse(req.body);
@@ -195,8 +206,8 @@ router.post("/reset-password", async (req, res): Promise<void> => {
     return;
   }
 
-  const { email, otpCode, newPassword } = parsed.data;
-  const [user] = await db.select().from(usersTable).where(eq(usersTable.email, email)).limit(1);
+  const { userId, otpCode, newPassword } = parsed.data;
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
   if (!user || !user.phone) {
     res.status(400).json({ error: "Invalid or expired code" });
     return;

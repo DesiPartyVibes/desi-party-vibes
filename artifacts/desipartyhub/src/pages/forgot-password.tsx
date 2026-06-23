@@ -8,15 +8,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { KeyRound, Smartphone, CheckCircle2, ArrowLeft, Loader2, Eye, EyeOff } from "lucide-react";
 
-type Step = "email" | "verify" | "done";
+type Step = "lookup" | "verify" | "done";
 
 export default function ForgotPassword() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
-  const [step, setStep] = useState<Step>("email");
-  const [email, setEmail] = useState("");
-  const [emailError, setEmailError] = useState("");
+  const [step, setStep] = useState<Step>("lookup");
+  const [emailOrPhone, setEmailOrPhone] = useState("");
+  const [inputError, setInputError] = useState("");
+  const [userId, setUserId] = useState<number | null>(null);
   const [maskedPhone, setMaskedPhone] = useState("");
   const [devCode, setDevCode] = useState<string | null>(null);
 
@@ -39,23 +40,30 @@ export default function ForgotPassword() {
 
   async function handleSendCode(e?: React.FormEvent) {
     e?.preventDefault();
-    if (!email) { setEmailError("Enter your email address."); return; }
-    if (!/\S+@\S+\.\S+/.test(email)) { setEmailError("Enter a valid email address."); return; }
-    setEmailError("");
+    const val = emailOrPhone.trim();
+    if (!val) { setInputError("Enter your email or phone number."); return; }
+    if (val.length < 4) { setInputError("Enter a valid email or phone number."); return; }
+    setInputError("");
     setLoadingSend(true);
 
     try {
       const res = await fetch("/api/auth/forgot-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ emailOrPhone: val }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to send code");
 
-      // Mask phone: show only last 4 digits
-      const raw: string = data.phone ?? "";
-      setMaskedPhone(raw ? `***-***-${raw.slice(-4)}` : "your registered number");
+      // If no userId returned it means account not found — show generic success to avoid enumeration
+      if (!data.userId) {
+        setMaskedPhone("your registered number");
+      } else {
+        setUserId(data.userId);
+        const raw: string = data.phone ?? "";
+        setMaskedPhone(raw ? `***-***-${raw.slice(-4)}` : "your registered number");
+      }
+
       setDevCode(data.devCode ?? null);
       if (data.devCode) {
         toast({ title: "Dev mode — no SMS sent", description: `Your code is: ${data.devCode}`, duration: 30000 });
@@ -75,10 +83,11 @@ export default function ForgotPassword() {
       const res = await fetch("/api/auth/forgot-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ emailOrPhone: emailOrPhone.trim() }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to resend");
+      if (data.userId) setUserId(data.userId);
       setDevCode(data.devCode ?? null);
       if (data.devCode) {
         toast({ title: "Dev mode — new code", description: `Your code is: ${data.devCode}`, duration: 30000 });
@@ -101,20 +110,21 @@ export default function ForgotPassword() {
     if (otpCode.length !== 6) { setOtpError("Enter the 6-digit code."); return; }
     if (newPassword.length < 6) { setPasswordError("Password must be at least 6 characters."); return; }
     if (newPassword !== confirmPassword) { setPasswordError("Passwords don't match."); return; }
+    if (!userId) { setOtpError("Session expired. Please start over."); return; }
 
     setLoadingReset(true);
     try {
       const res = await fetch("/api/auth/reset-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, otpCode, newPassword }),
+        body: JSON.stringify({ userId, otpCode, newPassword }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Reset failed");
       setStep("done");
     } catch (err: any) {
       const msg: string = err.message || "Something went wrong.";
-      if (msg.toLowerCase().includes("code") || msg.toLowerCase().includes("verification")) {
+      if (msg.toLowerCase().includes("code") || msg.toLowerCase().includes("verif")) {
         setOtpError(msg);
       } else {
         setPasswordError(msg);
@@ -129,8 +139,8 @@ export default function ForgotPassword() {
       <div className="flex-1 flex items-center justify-center py-12 px-4 bg-muted/30">
         <Card className="w-full max-w-md shadow-lg border-primary/10">
 
-          {/* ── Step 1: Enter email ── */}
-          {step === "email" && (
+          {/* ── Step 1: Email or phone lookup ── */}
+          {step === "lookup" && (
             <>
               <CardHeader className="space-y-3 text-center pb-6">
                 <div className="w-12 h-12 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-2">
@@ -138,31 +148,37 @@ export default function ForgotPassword() {
                 </div>
                 <CardTitle className="text-2xl font-serif font-bold">Forgot password?</CardTitle>
                 <CardDescription>
-                  Enter your email and we'll send a reset code to your registered mobile number.
+                  Enter your email or mobile number — we'll send a reset code to your registered phone.
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSendCode} className="space-y-5">
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email address</Label>
+                    <Label htmlFor="emailOrPhone">Email or phone number</Label>
                     <Input
-                      id="email"
-                      type="email"
-                      placeholder="name@example.com"
-                      value={email}
-                      onChange={(e) => { setEmail(e.target.value); setEmailError(""); }}
+                      id="emailOrPhone"
+                      type="text"
+                      placeholder="name@example.com or +1 813 555 0123"
+                      value={emailOrPhone}
+                      onChange={(e) => { setEmailOrPhone(e.target.value); setInputError(""); }}
                       autoFocus
+                      inputMode="email"
                     />
-                    {emailError && <p className="text-sm text-destructive">{emailError}</p>}
+                    {inputError && <p className="text-sm text-destructive">{inputError}</p>}
                   </div>
 
                   <Button type="submit" className="w-full" disabled={loadingSend}>
-                    {loadingSend ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Sending code...</> : "Send reset code"}
+                    {loadingSend
+                      ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Sending code...</>
+                      : "Send reset code"}
                   </Button>
                 </form>
 
                 <div className="mt-6 text-center text-sm">
-                  <Link href="/login" className="flex items-center justify-center gap-1 text-muted-foreground hover:text-foreground transition-colors">
+                  <Link
+                    href="/login"
+                    className="flex items-center justify-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
+                  >
                     <ArrowLeft className="h-3.5 w-3.5" /> Back to login
                   </Link>
                 </div>
@@ -250,7 +266,7 @@ export default function ForgotPassword() {
                 <div className="flex items-center justify-between text-sm mt-5">
                   <button
                     type="button"
-                    onClick={() => setStep("email")}
+                    onClick={() => { setStep("lookup"); setDevCode(null); }}
                     className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
                   >
                     <ArrowLeft className="h-3.5 w-3.5" /> Back
