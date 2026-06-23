@@ -18,16 +18,35 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
-import {
-  PartyPopper, User, Store, Loader2, ArrowLeft, Smartphone,
-} from "lucide-react";
+import { PartyPopper, User, Store, Loader2, ArrowLeft, Smartphone } from "lucide-react";
+
+const COUNTRIES = [
+  { code: "+1",   flag: "🇺🇸", name: "US/Canada" },
+  { code: "+44",  flag: "🇬🇧", name: "UK" },
+  { code: "+91",  flag: "🇮🇳", name: "India" },
+  { code: "+61",  flag: "🇦🇺", name: "Australia" },
+  { code: "+971", flag: "🇦🇪", name: "UAE" },
+  { code: "+92",  flag: "🇵🇰", name: "Pakistan" },
+  { code: "+880", flag: "🇧🇩", name: "Bangladesh" },
+  { code: "+94",  flag: "🇱🇰", name: "Sri Lanka" },
+  { code: "+977", flag: "🇳🇵", name: "Nepal" },
+  { code: "+65",  flag: "🇸🇬", name: "Singapore" },
+  { code: "+60",  flag: "🇲🇾", name: "Malaysia" },
+  { code: "+64",  flag: "🇳🇿", name: "New Zealand" },
+  { code: "+353", flag: "🇮🇪", name: "Ireland" },
+  { code: "+27",  flag: "🇿🇦", name: "South Africa" },
+  { code: "+49",  flag: "🇩🇪", name: "Germany" },
+  { code: "+33",  flag: "🇫🇷", name: "France" },
+  { code: "+31",  flag: "🇳🇱", name: "Netherlands" },
+  { code: "+960", flag: "🇲🇻", name: "Maldives" },
+];
 
 const formSchema = z.object({
   firstName: z.string().min(2, { message: "First name must be at least 2 characters." }),
   lastName: z.string().min(2, { message: "Last name must be at least 2 characters." }),
   email: z.string().email({ message: "Invalid email address." }),
   password: z.string().min(6, { message: "Password must be at least 6 characters." }),
-  phone: z.string().min(7, { message: "Enter a valid phone number." }),
+  phone: z.string().min(5, { message: "Enter a valid phone number." }),
   address: z.string().optional(),
   role: z.enum(["user", "vendor"], { required_error: "Please select an account type." }),
 });
@@ -43,10 +62,12 @@ export default function Register() {
 
   const [step, setStep] = useState<"form" | "verify">("form");
   const [savedValues, setSavedValues] = useState<FormValues | null>(null);
+  const [savedFullPhone, setSavedFullPhone] = useState("");
   const [otpCode, setOtpCode] = useState("");
   const [otpError, setOtpError] = useState("");
   const [devCode, setDevCode] = useState<string | null>(null);
   const [countdown, setCountdown] = useState(60);
+  const [countryCode, setCountryCode] = useState("+1");
 
   const roleParam = new URLSearchParams(window.location.search).get("role");
 
@@ -67,7 +88,6 @@ export default function Register() {
     if (!userLoading && currentUser) setLocation("/");
   }, [currentUser, userLoading, setLocation]);
 
-  // Countdown timer for resend
   useEffect(() => {
     if (step !== "verify") return;
     if (countdown <= 0) return;
@@ -77,12 +97,19 @@ export default function Register() {
 
   if (!userLoading && currentUser) return null;
 
+  function buildFullPhone(localNumber: string) {
+    const digits = localNumber.replace(/\D/g, "");
+    return `${countryCode}${digits}`;
+  }
+
   function dispatchOtp(values: FormValues) {
+    const fullPhone = buildFullPhone(values.phone);
     sendOtp.mutate(
-      { data: { phone: values.phone } },
+      { data: { phone: fullPhone } },
       {
         onSuccess: (data: any) => {
           setSavedValues(values);
+          setSavedFullPhone(fullPhone);
           setOtpCode("");
           setOtpError("");
           setCountdown(60);
@@ -118,14 +145,11 @@ export default function Register() {
 
   function handleVerify() {
     if (!savedValues) return;
-    if (otpCode.length !== 6) {
-      setOtpError("Enter the 6-digit code.");
-      return;
-    }
+    if (otpCode.length !== 6) { setOtpError("Enter the 6-digit code."); return; }
     setOtpError("");
 
     registerUser.mutate(
-      { data: { ...savedValues, otpCode } as any },
+      { data: { ...savedValues, phone: savedFullPhone, otpCode } as any },
       {
         onSuccess: () => {
           toast({ title: "Account created!", description: "Welcome to Desi Party Vibes!" });
@@ -133,7 +157,7 @@ export default function Register() {
         },
         onError: (error: any) => {
           const msg = error?.response?.data?.error || error.message || "Registration failed.";
-          if (msg.toLowerCase().includes("verification") || msg.toLowerCase().includes("code")) {
+          if (msg.toLowerCase().includes("verif") || msg.toLowerCase().includes("code")) {
             setOtpError(msg);
           } else {
             toast({ variant: "destructive", title: "Registration failed", description: msg });
@@ -144,7 +168,6 @@ export default function Register() {
   }
 
   const watchedRole = form.watch("role");
-  const displayPhone = savedValues?.phone ?? "";
 
   return (
     <Layout>
@@ -166,6 +189,7 @@ export default function Register() {
                 <Form {...form}>
                   <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
 
+                    {/* Account type */}
                     <FormField
                       control={form.control}
                       name="role"
@@ -191,6 +215,7 @@ export default function Register() {
                       )}
                     />
 
+                    {/* Name */}
                     <div className="grid grid-cols-2 gap-4">
                       <FormField
                         control={form.control}
@@ -198,7 +223,7 @@ export default function Register() {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>First Name</FormLabel>
-                            <FormControl><Input placeholder="Anjali" {...field} /></FormControl>
+                            <FormControl><Input placeholder="" {...field} /></FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -209,65 +234,90 @@ export default function Register() {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Last Name</FormLabel>
-                            <FormControl><Input placeholder="Sharma" {...field} /></FormControl>
+                            <FormControl><Input placeholder="" {...field} /></FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
                     </div>
 
+                    {/* Email */}
                     <FormField
                       control={form.control}
                       name="email"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Email</FormLabel>
-                          <FormControl><Input placeholder="name@example.com" type="email" {...field} /></FormControl>
+                          <FormControl><Input type="email" placeholder="" {...field} /></FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
 
+                    {/* Phone with country picker */}
                     <FormField
                       control={form.control}
                       name="phone"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Mobile Number</FormLabel>
-                          <FormControl><Input placeholder="+1 (813) 555-0123" type="tel" {...field} /></FormControl>
+                          <div className="flex gap-2">
+                            <select
+                              value={countryCode}
+                              onChange={(e) => setCountryCode(e.target.value)}
+                              className="h-10 rounded-md border border-input bg-background px-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring shrink-0"
+                            >
+                              {COUNTRIES.map((c) => (
+                                <option key={`${c.code}-${c.name}`} value={c.code}>
+                                  {c.flag} {c.code}
+                                </option>
+                              ))}
+                            </select>
+                            <FormControl>
+                              <Input
+                                type="tel"
+                                placeholder=""
+                                inputMode="numeric"
+                                {...field}
+                                onChange={(e) => field.onChange(e.target.value.replace(/[^\d\s\-().]/g, ""))}
+                              />
+                            </FormControl>
+                          </div>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
 
+                    {/* Address */}
                     <FormField
                       control={form.control}
                       name="address"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Address <span className="text-muted-foreground text-xs">(optional)</span></FormLabel>
-                          <FormControl><Input placeholder="123 Main St, Tampa, FL 33601" {...field} /></FormControl>
+                          <FormControl><Input placeholder="" {...field} /></FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
 
+                    {/* Password */}
                     <FormField
                       control={form.control}
                       name="password"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Password</FormLabel>
-                          <FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl>
+                          <FormControl><Input type="password" placeholder="" {...field} /></FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
 
                     <Button type="submit" className="w-full" disabled={sendOtp.isPending}>
-                      {sendOtp.isPending ? (
-                        <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Sending code...</>
-                      ) : "Sign up"}
+                      {sendOtp.isPending
+                        ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Sending code...</>
+                        : "Sign up"}
                     </Button>
                   </form>
                 </Form>
@@ -290,7 +340,7 @@ export default function Register() {
                 <CardTitle className="text-2xl font-serif font-bold">Verify your number</CardTitle>
                 <CardDescription>
                   We sent a 6-digit code to{" "}
-                  <span className="font-medium text-foreground">{displayPhone}</span>
+                  <span className="font-medium text-foreground">{savedFullPhone}</span>
                 </CardDescription>
                 {devCode && (
                   <p className="text-sm text-amber-600 bg-amber-50 rounded-lg px-3 py-2">
@@ -302,7 +352,7 @@ export default function Register() {
               <CardContent className="space-y-5">
                 <div className="space-y-2">
                   <Input
-                    placeholder="000000"
+                    placeholder=""
                     maxLength={6}
                     inputMode="numeric"
                     pattern="[0-9]*"
@@ -314,9 +364,7 @@ export default function Register() {
                     }}
                     autoFocus
                   />
-                  {otpError && (
-                    <p className="text-sm text-destructive text-center">{otpError}</p>
-                  )}
+                  {otpError && <p className="text-sm text-destructive text-center">{otpError}</p>}
                 </div>
 
                 <Button
@@ -324,9 +372,9 @@ export default function Register() {
                   onClick={handleVerify}
                   disabled={registerUser.isPending || otpCode.length !== 6}
                 >
-                  {registerUser.isPending ? (
-                    <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Creating account...</>
-                  ) : "Verify & create account"}
+                  {registerUser.isPending
+                    ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Creating account...</>
+                    : "Verify & create account"}
                 </Button>
 
                 <div className="flex items-center justify-between text-sm">
@@ -339,9 +387,7 @@ export default function Register() {
                   </button>
 
                   {countdown > 0 ? (
-                    <span className="text-muted-foreground">
-                      Resend in {countdown}s
-                    </span>
+                    <span className="text-muted-foreground">Resend in {countdown}s</span>
                   ) : (
                     <button
                       type="button"

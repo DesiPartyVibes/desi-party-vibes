@@ -173,8 +173,7 @@ router.post("/forgot-password", async (req, res): Promise<void> => {
   }
 
   if (!user || !user.phone) {
-    // Don't reveal whether the account exists
-    res.json({ success: true });
+    res.status(404).json({ error: "No account found with that email or phone number." });
     return;
   }
 

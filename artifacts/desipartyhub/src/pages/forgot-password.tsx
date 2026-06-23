@@ -53,17 +53,15 @@ export default function ForgotPassword() {
         body: JSON.stringify({ emailOrPhone: val }),
       });
       const data = await res.json();
+      if (res.status === 404) {
+        setInputError("No account found with that email or phone number.");
+        return;
+      }
       if (!res.ok) throw new Error(data.error || "Failed to send code");
 
-      // If no userId returned it means account not found — show generic success to avoid enumeration
-      if (!data.userId) {
-        setMaskedPhone("your registered number");
-      } else {
-        setUserId(data.userId);
-        const raw: string = data.phone ?? "";
-        setMaskedPhone(raw ? `***-***-${raw.slice(-4)}` : "your registered number");
-      }
-
+      setUserId(data.userId);
+      const raw: string = data.phone ?? "";
+      setMaskedPhone(raw ? `***-***-${raw.slice(-4)}` : "your registered number");
       setDevCode(data.devCode ?? null);
       if (data.devCode) {
         toast({ title: "Dev mode — no SMS sent", description: `Your code is: ${data.devCode}`, duration: 30000 });
