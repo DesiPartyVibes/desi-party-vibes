@@ -407,7 +407,7 @@ export default function Register() {
                                   <SelectValue placeholder="Select a state" />
                                 </SelectTrigger>
                               </FormControl>
-                              <SelectContent>
+                              <SelectContent position="popper" className="max-h-60 overflow-y-auto">
                                 {US_STATES.map((s) => (
                                   <SelectItem key={s} value={s}>{s}</SelectItem>
                                 ))}
