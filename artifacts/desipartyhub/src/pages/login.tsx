@@ -70,8 +70,8 @@ export default function Login() {
       <div className="flex-1 flex items-center justify-center py-12 px-4 bg-muted/30">
         <Card className="w-full max-w-md shadow-lg border-primary/10">
           <CardHeader className="space-y-3 text-center pb-6">
-            <div className="w-12 h-12 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-2">
-              <PartyPopper className="h-6 w-6" />
+            <div className="mx-auto mb-2">
+              <img src="/logo.png" alt="Desi Party Vibes" className="h-16 w-auto" />
             </div>
             <CardTitle className="text-2xl font-serif font-bold">Welcome back</CardTitle>
             <CardDescription>

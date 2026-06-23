@@ -141,8 +141,8 @@ export default function ForgotPassword() {
           {step === "lookup" && (
             <>
               <CardHeader className="space-y-3 text-center pb-6">
-                <div className="w-12 h-12 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-2">
-                  <KeyRound className="h-6 w-6" />
+                <div className="mx-auto mb-2">
+                  <img src="/logo.png" alt="Desi Party Vibes" className="h-16 w-auto" />
                 </div>
                 <CardTitle className="text-2xl font-serif font-bold">Forgot password?</CardTitle>
                 <CardDescription>
