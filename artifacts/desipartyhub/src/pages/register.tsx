@@ -18,7 +18,8 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
-import { PartyPopper, User, Store, Loader2, ArrowLeft, Smartphone } from "lucide-react";
+import { PartyPopper, User, Store, Loader2, ArrowLeft, Smartphone, ChevronDown, Check } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 const COUNTRIES = [
   { code: "+1",   flag: "🇺🇸", name: "US/Canada" },
@@ -40,6 +41,42 @@ const COUNTRIES = [
   { code: "+31",  flag: "🇳🇱", name: "Netherlands" },
   { code: "+960", flag: "🇲🇻", name: "Maldives" },
 ];
+
+function CountryCodePicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const selected = COUNTRIES.find((c) => c.code === value) ?? COUNTRIES[0];
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="h-10 flex items-center gap-1.5 rounded-md border border-input bg-background px-3 text-sm hover:bg-muted/50 focus:outline-none focus:ring-2 focus:ring-ring shrink-0 font-medium"
+        >
+          <span>{selected.flag}</span>
+          <span>{selected.code}</span>
+          <ChevronDown className="h-3.5 w-3.5 text-muted-foreground ml-0.5" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-56 p-0 max-h-72 overflow-auto" align="start">
+        {COUNTRIES.map((c) => (
+          <button
+            key={`${c.code}-${c.name}`}
+            type="button"
+            onClick={() => { onChange(c.code); setOpen(false); }}
+            className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-muted transition-colors text-left ${c.code === value && c.name === selected.name ? "bg-primary/5 font-medium" : ""}`}
+          >
+            <span className="text-base">{c.flag}</span>
+            <span className="font-mono text-muted-foreground w-10 shrink-0">{c.code}</span>
+            <span className="truncate">{c.name}</span>
+            {c.code === value && c.name === selected.name && (
+              <Check className="h-3.5 w-3.5 text-primary ml-auto shrink-0" />
+            )}
+          </button>
+        ))}
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 const formSchema = z.object({
   firstName: z.string().min(2, { message: "First name must be at least 2 characters." }),
@@ -262,17 +299,7 @@ export default function Register() {
                         <FormItem>
                           <FormLabel>Mobile Number</FormLabel>
                           <div className="flex gap-2">
-                            <select
-                              value={countryCode}
-                              onChange={(e) => setCountryCode(e.target.value)}
-                              className="h-10 rounded-md border border-input bg-background px-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring shrink-0"
-                            >
-                              {COUNTRIES.map((c) => (
-                                <option key={`${c.code}-${c.name}`} value={c.code}>
-                                  {c.flag} {c.code}
-                                </option>
-                              ))}
-                            </select>
+                            <CountryCodePicker value={countryCode} onChange={setCountryCode} />
                             <FormControl>
                               <Input
                                 type="tel"
