@@ -156,7 +156,7 @@ export default function ForgotPassword() {
                     <Input
                       id="emailOrPhone"
                       type="text"
-                      placeholder="name@example.com or +1 813 555 0123"
+                      placeholder=""
                       value={emailOrPhone}
                       onChange={(e) => { setEmailOrPhone(e.target.value); setInputError(""); }}
                       autoFocus
