@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
-import { PartyPopper, User, Store, Loader2, ArrowLeft, Smartphone, ChevronDown, Check } from "lucide-react";
+import { PartyPopper, User, Store, Loader2, ArrowLeft, Smartphone, ChevronDown, Check, Eye, EyeOff } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -94,7 +94,12 @@ const formSchema = z.object({
   firstName: z.string().min(2, { message: "First name must be at least 2 characters." }),
   lastName: z.string().min(2, { message: "Last name must be at least 2 characters." }),
   email: z.string().email({ message: "Invalid email address." }),
-  password: z.string().min(6, { message: "Password must be at least 6 characters." }),
+  password: z.string()
+    .min(8, "At least 8 characters")
+    .regex(/[A-Z]/, "One uppercase letter")
+    .regex(/[0-9]/, "One number")
+    .regex(/[^A-Za-z0-9]/, "One special character"),
+  confirmPassword: z.string(),
   phone: z.string().min(5, { message: "Enter a valid phone number." }),
   streetAddress: z.string().optional(),
   unit: z.string().optional(),
@@ -102,6 +107,9 @@ const formSchema = z.object({
   state: z.string().optional(),
   zip: z.string().optional(),
   role: z.enum(["user", "vendor"], { required_error: "Please select an account type." }),
+}).refine((d) => d.password === d.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -121,6 +129,8 @@ export default function Register() {
   const [devCode, setDevCode] = useState<string | null>(null);
   const [countdown, setCountdown] = useState(60);
   const [countryCode, setCountryCode] = useState("+1");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const roleParam = new URLSearchParams(window.location.search).get("role");
 
@@ -131,6 +141,7 @@ export default function Register() {
       lastName: "",
       email: "",
       password: "",
+      confirmPassword: "",
       phone: "",
       streetAddress: "",
       unit: "",
@@ -205,7 +216,7 @@ export default function Register() {
     if (otpCode.length !== 6) { setOtpError("Enter the 6-digit code."); return; }
     setOtpError("");
 
-    const { streetAddress, unit, city, state, zip, ...rest } = savedValues;
+    const { streetAddress, unit, city, state, zip, confirmPassword: _cp, ...rest } = savedValues;
     const addressParts = [streetAddress, unit, city, state, zip].filter(Boolean);
     const address = addressParts.length > 0 ? addressParts.join(", ") : undefined;
 
@@ -423,10 +434,76 @@ export default function Register() {
                     <FormField
                       control={form.control}
                       name="password"
+                      render={({ field }) => {
+                        const pw = field.value ?? "";
+                        const rules = [
+                          { label: "At least 8 characters",    met: pw.length >= 8 },
+                          { label: "One uppercase letter",      met: /[A-Z]/.test(pw) },
+                          { label: "One number",                met: /[0-9]/.test(pw) },
+                          { label: "One special character",     met: /[^A-Za-z0-9]/.test(pw) },
+                        ];
+                        return (
+                          <FormItem>
+                            <FormLabel>Password</FormLabel>
+                            <FormControl>
+                              <div className="relative">
+                                <Input
+                                  type={showPassword ? "text" : "password"}
+                                  placeholder=""
+                                  {...field}
+                                  className="pr-10"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => setShowPassword((v) => !v)}
+                                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                  tabIndex={-1}
+                                >
+                                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                </button>
+                              </div>
+                            </FormControl>
+                            {pw.length > 0 && (
+                              <ul className="mt-1.5 space-y-1">
+                                {rules.map((r) => (
+                                  <li key={r.label} className={`flex items-center gap-1.5 text-xs ${r.met ? "text-green-600" : "text-muted-foreground"}`}>
+                                    <Check className={`h-3 w-3 shrink-0 ${r.met ? "opacity-100" : "opacity-30"}`} />
+                                    {r.label}
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                            <FormMessage />
+                          </FormItem>
+                        );
+                      }}
+                    />
+
+                    {/* Confirm Password */}
+                    <FormField
+                      control={form.control}
+                      name="confirmPassword"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Password</FormLabel>
-                          <FormControl><Input type="password" placeholder="" {...field} /></FormControl>
+                          <FormLabel>Confirm Password</FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <Input
+                                type={showConfirm ? "text" : "password"}
+                                placeholder=""
+                                {...field}
+                                className="pr-10"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setShowConfirm((v) => !v)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                tabIndex={-1}
+                              >
+                                {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                              </button>
+                            </div>
+                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
