@@ -71,8 +71,8 @@ router.post("/send-otp", async (req, res): Promise<void> => {
     return;
   }
 
-  // In dev/no-Twilio mode, return the code so it can be displayed in the UI
-  const devMode = !process.env.TWILIO_ACCOUNT_SID;
+  // Only expose the OTP in local dev (never in production)
+  const devMode = !process.env.TWILIO_ACCOUNT_SID && process.env.NODE_ENV !== "production";
   res.json({ success: true, ...(devMode ? { devCode: code } : {}) });
 });
 
@@ -189,7 +189,7 @@ router.post("/forgot-password", async (req, res): Promise<void> => {
     return;
   }
 
-  const devMode = !process.env.TWILIO_ACCOUNT_SID;
+  const devMode = !process.env.TWILIO_ACCOUNT_SID && process.env.NODE_ENV !== "production";
   res.json({ success: true, userId: user.id, phone: user.phone, ...(devMode ? { devCode: code } : {}) });
 });
 
