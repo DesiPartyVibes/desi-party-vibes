@@ -24,6 +24,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 import { MapPin, Star, Heart, Phone, Mail, Globe, Calendar, Users, MessageSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -40,6 +41,33 @@ const reviewSchema = z.object({
   rating: z.coerce.number().min(1).max(5),
   comment: z.string().min(5, { message: "Review must be at least 5 characters" }),
 });
+
+function StarRatingInput({ value, onChange }: { value: number; onChange: (rating: number) => void }) {
+  const [hovered, setHovered] = useState<number | null>(null);
+  const active = hovered ?? value;
+
+  return (
+    <div className="flex items-center gap-1" onMouseLeave={() => setHovered(null)}>
+      {[1, 2, 3, 4, 5].map((star) => (
+        <button
+          key={star}
+          type="button"
+          onClick={() => onChange(star)}
+          onMouseEnter={() => setHovered(star)}
+          className="p-0.5"
+          aria-label={`Rate ${star} star${star > 1 ? "s" : ""}`}
+        >
+          <Star
+            className={cn(
+              "h-7 w-7 transition-colors",
+              star <= active ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"
+            )}
+          />
+        </button>
+      ))}
+    </div>
+  );
+}
 
 export default function VendorDetail() {
   const [, params] = useRoute("/vendors/:id");
@@ -71,7 +99,7 @@ export default function VendorDetail() {
   const reviewForm = useForm<z.infer<typeof reviewSchema>>({
     resolver: zodResolver(reviewSchema),
     defaultValues: {
-      rating: 5,
+      rating: 0,
       comment: "",
     },
   });
@@ -289,19 +317,10 @@ export default function VendorDetail() {
                             name="rating"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Rating (1-5)</FormLabel>
-                                <Select onValueChange={(val) => field.onChange(parseInt(val))} defaultValue={field.value.toString()}>
-                                  <FormControl>
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Select rating" />
-                                    </SelectTrigger>
-                                  </FormControl>
-                                  <SelectContent>
-                                    {[5, 4, 3, 2, 1].map((r) => (
-                                      <SelectItem key={r} value={r.toString()}>{r} Stars</SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
+                                <FormLabel>Rating</FormLabel>
+                                <FormControl>
+                                  <StarRatingInput value={field.value} onChange={field.onChange} />
+                                </FormControl>
                                 <FormMessage />
                               </FormItem>
                             )}
