@@ -958,7 +958,7 @@ components:
     # REVIEWS
     Review:
       type: object
-      required: [id, vendorId, userId, userName, rating, comment, createdAt]
+      required: [id, vendorId, userId, userName, rating, createdAt]
       properties:
         id:
           type: integer
@@ -973,13 +973,13 @@ components:
         rating:
           type: integer
         comment:
-          type: string
+          type: ["string", "null"]
         createdAt:
           type: string
 
     ReviewInput:
       type: object
-      required: [rating, comment]
+      required: [rating]
       properties:
         rating:
           type: integer

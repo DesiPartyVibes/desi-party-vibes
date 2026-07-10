@@ -56,7 +56,7 @@ router.post("/", async (req, res): Promise<void> => {
 
   const schema = z.object({
     rating: z.number().int().min(1).max(5),
-    comment: z.string().min(1),
+    comment: z.string().min(1).optional(),
   });
 
   const parsed = schema.safeParse(req.body);
@@ -69,7 +69,7 @@ router.post("/", async (req, res): Promise<void> => {
     vendorId,
     userId: user.id,
     rating: parsed.data.rating,
-    comment: parsed.data.comment,
+    comment: parsed.data.comment ?? null,
   }).returning();
 
   // Recompute vendor rating

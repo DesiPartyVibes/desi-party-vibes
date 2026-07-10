@@ -39,7 +39,7 @@ const bookingSchema = z.object({
 
 const reviewSchema = z.object({
   rating: z.coerce.number().min(1).max(5),
-  comment: z.string().min(5, { message: "Review must be at least 5 characters" }),
+  comment: z.string().min(5, { message: "Review must be at least 5 characters" }).optional().or(z.literal("")),
 });
 
 function StarRatingInput({ value, onChange }: { value: number; onChange: (rating: number) => void }) {
@@ -160,7 +160,7 @@ export default function VendorDetail() {
     }
 
     createReview.mutate(
-      { vendorId, data: values },
+      { vendorId, data: { rating: values.rating, comment: values.comment ? values.comment : undefined } },
       {
         onSuccess: () => {
           toast({ title: "Review added!", description: "Thank you for your feedback." });
@@ -301,7 +301,7 @@ export default function VendorDetail() {
                             </div>
                           </div>
                         </div>
-                        <p className="text-foreground mt-3">{review.comment}</p>
+                        {review.comment && <p className="text-foreground mt-3">{review.comment}</p>}
                       </div>
                     ))
                   )}
@@ -330,7 +330,7 @@ export default function VendorDetail() {
                             name="comment"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Your Review</FormLabel>
+                                <FormLabel>Your Review <span className="text-muted-foreground font-normal">(optional)</span></FormLabel>
                                 <FormControl>
                                   <Textarea rows={4} placeholder="Share your experience..." {...field} />
                                 </FormControl>

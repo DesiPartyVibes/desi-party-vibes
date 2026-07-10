@@ -102,7 +102,8 @@ export interface Review {
   /** @nullable */
   userAvatarUrl?: string | null;
   rating: number;
-  comment: string;
+  /** @nullable */
+  comment?: string | null;
   createdAt: string;
 }
 
@@ -178,7 +179,7 @@ export interface VendorUpdate {
 
 export interface ReviewInput {
   rating: number;
-  comment: string;
+  comment?: string;
 }
 
 export type BookingStatus = typeof BookingStatus[keyof typeof BookingStatus];

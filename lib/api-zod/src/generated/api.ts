@@ -210,7 +210,7 @@ export const GetVendorResponse = zod.object({
   "userName": zod.string(),
   "userAvatarUrl": zod.string().nullish(),
   "rating": zod.number(),
-  "comment": zod.string(),
+  "comment": zod.string().nullish(),
   "createdAt": zod.string()
 }))
 })
@@ -290,7 +290,7 @@ export const ListVendorReviewsResponseItem = zod.object({
   "userName": zod.string(),
   "userAvatarUrl": zod.string().nullish(),
   "rating": zod.number(),
-  "comment": zod.string(),
+  "comment": zod.string().nullish(),
   "createdAt": zod.string()
 })
 export const ListVendorReviewsResponse = zod.array(ListVendorReviewsResponseItem)
@@ -305,7 +305,7 @@ export const CreateReviewParams = zod.object({
 
 export const CreateReviewBody = zod.object({
   "rating": zod.number(),
-  "comment": zod.string()
+  "comment": zod.string().optional()
 })
 
 

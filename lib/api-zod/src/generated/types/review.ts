@@ -14,6 +14,7 @@ export interface Review {
   /** @nullable */
   userAvatarUrl?: string | null;
   rating: number;
-  comment: string;
+  /** @nullable */
+  comment?: string | null;
   createdAt: string;
 }

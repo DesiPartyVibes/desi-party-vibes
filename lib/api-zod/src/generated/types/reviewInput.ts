@@ -8,5 +8,5 @@
 
 export interface ReviewInput {
   rating: number;
-  comment: string;
+  comment?: string;
 }
