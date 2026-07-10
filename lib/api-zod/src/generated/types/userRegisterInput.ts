@@ -15,5 +15,4 @@ export interface UserRegisterInput {
   phone: string;
   address?: string;
   role: UserRegisterInputRole;
-  otpCode: string;
 }

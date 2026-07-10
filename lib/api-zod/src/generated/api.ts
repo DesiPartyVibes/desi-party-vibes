@@ -17,19 +17,6 @@ export const HealthCheckResponse = zod.object({
 
 
 /**
- * @summary Send OTP to phone number for verification
- */
-export const SendOtpBody = zod.object({
-  "phone": zod.string()
-})
-
-export const SendOtpResponse = zod.object({
-  "success": zod.boolean(),
-  "devCode": zod.string().optional()
-})
-
-
-/**
  * @summary Register a new user
  */
 export const RegisterUserBody = zod.object({
@@ -39,8 +26,7 @@ export const RegisterUserBody = zod.object({
   "password": zod.string(),
   "phone": zod.string(),
   "address": zod.string().optional(),
-  "role": zod.enum(['user', 'vendor', 'admin']),
-  "otpCode": zod.string()
+  "role": zod.enum(['user', 'vendor', 'admin'])
 })
 
 

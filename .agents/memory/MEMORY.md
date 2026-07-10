@@ -1,0 +1,1 @@
+- [Orval codegen breaks with js-yaml v5](orval-jsyaml-pin.md) — pin `js-yaml` to `^4.2.0` (not `>=4.2.0`) in pnpm-workspace.yaml overrides or codegen fails on ESM default export.
