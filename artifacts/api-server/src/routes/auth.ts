@@ -30,7 +30,6 @@ const registerSchema = z.object({
   password: z.string().min(6),
   phone: z.string().min(7),
   address: z.string().optional(),
-  role: z.enum(["user", "vendor", "admin"]),
 });
 
 const loginSchema = z.object({
@@ -45,7 +44,7 @@ router.post("/register", async (req, res): Promise<void> => {
     res.status(400).json({ error: "Invalid input" });
     return;
   }
-  const { firstName, lastName, email, password, phone: rawPhone, address, role } = parsed.data;
+  const { firstName, lastName, email, password, phone: rawPhone, address } = parsed.data;
   const phone = normalisePhone(rawPhone);
   const name = `${firstName} ${lastName}`.trim();
 
@@ -61,7 +60,7 @@ router.post("/register", async (req, res): Promise<void> => {
     lastName,
     email,
     passwordHash: hashPassword(password),
-    role,
+    role: "user",
     phone,
     address,
   }).returning();
