@@ -163,3 +163,6 @@ overrides:
   js-yaml: "^4.2.0"
   markdown-it: ">=14.2.0"
   "@babel/core": ">=7.29.6"
+
+allowBuilds:
+  esbuild: true
