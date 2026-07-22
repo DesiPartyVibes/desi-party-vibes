@@ -14,5 +14,5 @@ export interface UserRegisterInput {
   password: string;
   phone: string;
   address?: string;
-  role: UserRegisterInputRole;
+  role?: UserRegisterInputRole;
 }

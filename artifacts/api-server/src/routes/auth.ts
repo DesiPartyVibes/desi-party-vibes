@@ -30,6 +30,7 @@ const registerSchema = z.object({
   password: z.string().min(6),
   phone: z.string().min(7),
   address: z.string().optional(),
+  role: z.enum(["user", "vendor"]).default("user"),
 });
 
 const loginSchema = z.object({
@@ -44,7 +45,7 @@ router.post("/register", async (req, res): Promise<void> => {
     res.status(400).json({ error: "Invalid input" });
     return;
   }
-  const { firstName, lastName, email, password, phone: rawPhone, address } = parsed.data;
+  const { firstName, lastName, email, password, phone: rawPhone, address, role } = parsed.data;
   const phone = normalisePhone(rawPhone);
   const name = `${firstName} ${lastName}`.trim();
 
@@ -60,7 +61,8 @@ router.post("/register", async (req, res): Promise<void> => {
     lastName,
     email,
     passwordHash: hashPassword(password),
-    role: "user",
+    role, // restricted to "user" | "vendor" by registerSchema — "admin" is rejected at parse time
+    isVerified: role !== "vendor", // vendors start pending admin approval; users don't need review
     phone,
     address,
   }).returning();
@@ -81,6 +83,7 @@ router.post("/register", async (req, res): Promise<void> => {
       name: user.name,
       email: user.email,
       role: user.role,
+      isVerified: user.isVerified,
       avatarUrl: user.avatarUrl,
       createdAt: user.createdAt.toISOString(),
     },
@@ -156,6 +159,7 @@ router.post("/login", async (req, res): Promise<void> => {
       name: user.name,
       email: user.email,
       role: user.role,
+      isVerified: user.isVerified,
       avatarUrl: user.avatarUrl,
       createdAt: user.createdAt.toISOString(),
     },
@@ -195,6 +199,7 @@ router.get("/me", async (req, res): Promise<void> => {
     name: user.name,
     email: user.email,
     role: user.role,
+    isVerified: user.isVerified,
     avatarUrl: user.avatarUrl,
     createdAt: user.createdAt.toISOString(),
   });

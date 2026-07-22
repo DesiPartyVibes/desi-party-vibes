@@ -51,6 +51,17 @@ export default function Profile() {
                     <span className="px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium uppercase tracking-wider">
                       {user.role}
                     </span>
+                    {user.role === "vendor" && (
+                      <span
+                        className={
+                          user.isVerified
+                            ? "px-3 py-1 bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-400 rounded-full text-xs font-medium uppercase tracking-wider"
+                            : "px-3 py-1 bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 rounded-full text-xs font-medium uppercase tracking-wider"
+                        }
+                      >
+                        {user.isVerified ? "Verified" : "Pending Verification"}
+                      </span>
+                    )}
                     <span className="text-xs text-muted-foreground">
                       Joined {format(new Date(user.createdAt), "MMMM yyyy")}
                     </span>

@@ -7,6 +7,7 @@
  */
 
 export * from './adminStats';
+export * from './adminVerifyVendor200';
 export * from './authResponse';
 export * from './booking';
 export * from './bookingInput';

@@ -13,7 +13,8 @@ import {
   useCreateVendor,
   useUpdateVendor,
   useDeleteVendor,
-  useListCategories
+  useListCategories,
+  useAdminVerifyVendor
 } from "@workspace/api-client-react";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -54,14 +55,15 @@ export default function AdminDashboard() {
   const { data: user, isLoading: userLoading } = useGetCurrentUser();
   const { data: stats } = useGetAdminStats({ query: { enabled: user?.role === 'admin' } });
   const { data: vendors, refetch: refetchVendors } = useAdminListVendors({ query: { enabled: user?.role === 'admin' } });
-  const { data: users } = useAdminListUsers({ query: { enabled: user?.role === 'admin' } });
+  const { data: users, refetch: refetchUsers } = useAdminListUsers({ query: { enabled: user?.role === 'admin' } });
   const { data: bookings, refetch: refetchBookings } = useAdminListBookings({ query: { enabled: user?.role === 'admin' } });
   const { data: categories } = useListCategories();
-  
+
   const updateStatus = useUpdateBookingStatus();
   const createVendor = useCreateVendor();
   const updateVendor = useUpdateVendor();
   const deleteVendor = useDeleteVendor();
+  const verifyVendor = useAdminVerifyVendor();
 
   const [isVendorModalOpen, setIsVendorModalOpen] = useState(false);
   const [editingVendorId, setEditingVendorId] = useState<number | null>(null);
@@ -169,6 +171,18 @@ export default function AdminDashboard() {
       isFeatured: false,
     });
     setIsVendorModalOpen(true);
+  };
+
+  const handleVerifyVendor = (id: number) => {
+    verifyVendor.mutate(
+      { id },
+      {
+        onSuccess: () => {
+          toast({ description: "Vendor approved" });
+          refetchUsers();
+        }
+      }
+    );
   };
 
   const handleDeleteVendor = (id: number) => {
@@ -378,7 +392,9 @@ export default function AdminDashboard() {
                     <TableHead>Name</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Role</TableHead>
+                    <TableHead>Status</TableHead>
                     <TableHead>Joined</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -392,7 +408,25 @@ export default function AdminDashboard() {
                           {u.role}
                         </Badge>
                       </TableCell>
+                      <TableCell>
+                        {u.role === 'vendor' && (
+                          <Badge variant={u.isVerified ? "default" : "outline"}>
+                            {u.isVerified ? "Verified" : "Pending"}
+                          </Badge>
+                        )}
+                      </TableCell>
                       <TableCell>{format(new Date(u.createdAt), "MMM d, yyyy")}</TableCell>
+                      <TableCell className="text-right">
+                        {u.role === 'vendor' && !u.isVerified && (
+                          <Button
+                            size="sm"
+                            onClick={() => handleVerifyVendor(u.id)}
+                            disabled={verifyVendor.isPending}
+                          >
+                            Approve
+                          </Button>
+                        )}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

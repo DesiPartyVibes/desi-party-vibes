@@ -21,6 +21,7 @@ import type {
 
 import type {
   AdminStats,
+  AdminVerifyVendor200,
   AuthResponse,
   Booking,
   BookingInput,
@@ -2578,6 +2579,76 @@ export function useAdminListUsers<TData = Awaited<ReturnType<typeof adminListUse
 
 
 
+
+export const getAdminVerifyVendorUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/users/${id}/verify`
+}
+
+/**
+ * @summary Approve a pending vendor account
+ */
+export const adminVerifyVendor = async (id: number, options?: RequestInit): Promise<AdminVerifyVendor200> => {
+
+  return customFetch<AdminVerifyVendor200>(getAdminVerifyVendorUrl(id),
+  {
+    ...options,
+    method: 'PATCH'
+
+
+  }
+);}
+
+
+
+
+export const getAdminVerifyVendorMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminVerifyVendor>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminVerifyVendor>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['adminVerifyVendor'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminVerifyVendor>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  adminVerifyVendor(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminVerifyVendorMutationResult = NonNullable<Awaited<ReturnType<typeof adminVerifyVendor>>>
+
+    export type AdminVerifyVendorMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Approve a pending vendor account
+ */
+export const useAdminVerifyVendor = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminVerifyVendor>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminVerifyVendor>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getAdminVerifyVendorMutationOptions(options));
+    }
 
 export const getGetAdminStatsUrl = () => {
 
