@@ -16,6 +16,7 @@ import Checklist from "@/pages/checklist";
 import Budget from "@/pages/budget";
 import Bookings from "@/pages/bookings";
 import AdminDashboard from "@/pages/admin";
+import VendorDashboard from "@/pages/vendor-dashboard";
 import ForgotPassword from "@/pages/forgot-password";
 
 const queryClient = new QueryClient();
@@ -36,6 +37,7 @@ function Router() {
       <Route path="/budget" component={Budget} />
       <Route path="/bookings" component={Bookings} />
       <Route path="/admin" component={AdminDashboard} />
+      <Route path="/vendor-dashboard" component={VendorDashboard} />
       <Route component={NotFound} />
     </Switch>
   );

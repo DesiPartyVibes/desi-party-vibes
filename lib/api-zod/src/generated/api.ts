@@ -121,6 +121,7 @@ export const ListVendorsResponse = zod.object({
   "website": zod.string().nullish(),
   "isActive": zod.boolean(),
   "isFeatured": zod.boolean().optional(),
+  "isClaimed": zod.boolean(),
   "createdAt": zod.string()
 })),
   "total": zod.number(),
@@ -172,6 +173,7 @@ export const ListFeaturedVendorsResponseItem = zod.object({
   "website": zod.string().nullish(),
   "isActive": zod.boolean(),
   "isFeatured": zod.boolean().optional(),
+  "isClaimed": zod.boolean(),
   "createdAt": zod.string()
 })
 export const ListFeaturedVendorsResponse = zod.array(ListFeaturedVendorsResponseItem)
@@ -262,6 +264,7 @@ export const UpdateVendorResponse = zod.object({
   "website": zod.string().nullish(),
   "isActive": zod.boolean(),
   "isFeatured": zod.boolean().optional(),
+  "isClaimed": zod.boolean(),
   "createdAt": zod.string()
 })
 
@@ -309,6 +312,33 @@ export const CreateReviewBody = zod.object({
   "rating": zod.number(),
   "comment": zod.string().optional()
 })
+
+
+/**
+ * @summary Submit a claim request for an existing vendor listing
+ */
+export const CreateVendorClaimBody = zod.object({
+  "vendorId": zod.number(),
+  "note": zod.string().nullish()
+})
+
+
+/**
+ * @summary List the current vendor user's claim requests
+ */
+export const ListMyVendorClaimsResponseItem = zod.object({
+  "id": zod.number(),
+  "vendorId": zod.number(),
+  "vendorName": zod.string(),
+  "userId": zod.number(),
+  "userName": zod.string(),
+  "userEmail": zod.string(),
+  "status": zod.enum(['pending', 'approved', 'rejected']),
+  "note": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "reviewedAt": zod.string().nullish()
+})
+export const ListMyVendorClaimsResponse = zod.array(ListMyVendorClaimsResponseItem)
 
 
 /**
@@ -390,6 +420,7 @@ export const ListFavoritesResponseItem = zod.object({
   "website": zod.string().nullish(),
   "isActive": zod.boolean(),
   "isFeatured": zod.boolean().optional(),
+  "isClaimed": zod.boolean(),
   "createdAt": zod.string()
 })
 export const ListFavoritesResponse = zod.array(ListFavoritesResponseItem)
@@ -623,6 +654,7 @@ export const AdminListVendorsResponseItem = zod.object({
   "website": zod.string().nullish(),
   "isActive": zod.boolean(),
   "isFeatured": zod.boolean().optional(),
+  "isClaimed": zod.boolean(),
   "createdAt": zod.string()
 })
 export const AdminListVendorsResponse = zod.array(AdminListVendorsResponseItem)
@@ -672,6 +704,66 @@ export const AdminVerifyVendorParams = zod.object({
 export const AdminVerifyVendorResponse = zod.object({
   "id": zod.number(),
   "isVerified": zod.boolean()
+})
+
+
+/**
+ * @summary Admin list all vendor claim requests
+ */
+export const AdminListVendorClaimsResponseItem = zod.object({
+  "id": zod.number(),
+  "vendorId": zod.number(),
+  "vendorName": zod.string(),
+  "userId": zod.number(),
+  "userName": zod.string(),
+  "userEmail": zod.string(),
+  "status": zod.enum(['pending', 'approved', 'rejected']),
+  "note": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "reviewedAt": zod.string().nullish()
+})
+export const AdminListVendorClaimsResponse = zod.array(AdminListVendorClaimsResponseItem)
+
+
+/**
+ * @summary Approve a vendor claim request, linking the vendor to the claiming user
+ */
+export const AdminApproveVendorClaimParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const AdminApproveVendorClaimResponse = zod.object({
+  "id": zod.number(),
+  "vendorId": zod.number(),
+  "vendorName": zod.string(),
+  "userId": zod.number(),
+  "userName": zod.string(),
+  "userEmail": zod.string(),
+  "status": zod.enum(['pending', 'approved', 'rejected']),
+  "note": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "reviewedAt": zod.string().nullish()
+})
+
+
+/**
+ * @summary Reject a vendor claim request
+ */
+export const AdminRejectVendorClaimParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const AdminRejectVendorClaimResponse = zod.object({
+  "id": zod.number(),
+  "vendorId": zod.number(),
+  "vendorName": zod.string(),
+  "userId": zod.number(),
+  "userName": zod.string(),
+  "userEmail": zod.string(),
+  "status": zod.enum(['pending', 'approved', 'rejected']),
+  "note": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "reviewedAt": zod.string().nullish()
 })
 
 

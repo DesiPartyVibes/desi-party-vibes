@@ -10,6 +10,7 @@ import checklistRouter from "./checklist";
 import budgetRouter from "./budget";
 import statsRouter from "./stats";
 import adminRouter from "./admin";
+import vendorClaimsRouter from "./vendor-claims";
 
 const router: IRouter = Router();
 
@@ -24,5 +25,6 @@ router.use("/checklist", checklistRouter);
 router.use("/budget", budgetRouter);
 router.use("/stats", statsRouter);
 router.use("/admin", adminRouter);
+router.use("/vendor-claims", vendorClaimsRouter);
 
 export default router;

@@ -312,6 +312,41 @@ paths:
               schema:
                 $ref: "#/components/schemas/Review"
 
+  # VENDOR CLAIMS
+  /vendor-claims:
+    post:
+      operationId: createVendorClaim
+      tags: [vendors]
+      summary: Submit a claim request for an existing vendor listing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VendorClaimInput"
+      responses:
+        "201":
+          description: Claim submitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VendorClaim"
+
+  /vendor-claims/mine:
+    get:
+      operationId: listMyVendorClaims
+      tags: [vendors]
+      summary: List the current vendor user's claim requests
+      responses:
+        "200":
+          description: Claims
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/VendorClaim"
+
   # BOOKINGS
   /bookings:
     get:
@@ -695,6 +730,59 @@ paths:
                   isVerified:
                     type: boolean
 
+  /admin/vendor-claims:
+    get:
+      operationId: adminListVendorClaims
+      tags: [admin]
+      summary: Admin list all vendor claim requests
+      responses:
+        "200":
+          description: Claims
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/VendorClaim"
+
+  /admin/vendor-claims/{id}/approve:
+    patch:
+      operationId: adminApproveVendorClaim
+      tags: [admin]
+      summary: Approve a vendor claim request, linking the vendor to the claiming user
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Claim approved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VendorClaim"
+
+  /admin/vendor-claims/{id}/reject:
+    patch:
+      operationId: adminRejectVendorClaim
+      tags: [admin]
+      summary: Reject a vendor claim request
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Claim rejected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VendorClaim"
+
   /admin/stats:
     get:
       operationId: getAdminStats
@@ -817,6 +905,7 @@ components:
           reviewCount,
           imageUrl,
           isActive,
+          isClaimed,
           createdAt,
         ]
       properties:
@@ -857,6 +946,8 @@ components:
         isActive:
           type: boolean
         isFeatured:
+          type: boolean
+        isClaimed:
           type: boolean
         createdAt:
           type: string
@@ -1316,3 +1407,38 @@ components:
           type: string
         count:
           type: integer
+
+    VendorClaim:
+      type: object
+      required: [id, vendorId, vendorName, userId, userName, userEmail, status, createdAt]
+      properties:
+        id:
+          type: integer
+        vendorId:
+          type: integer
+        vendorName:
+          type: string
+        userId:
+          type: integer
+        userName:
+          type: string
+        userEmail:
+          type: string
+        status:
+          type: string
+          enum: [pending, approved, rejected]
+        note:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        reviewedAt:
+          type: ["string", "null"]
+
+    VendorClaimInput:
+      type: object
+      required: [vendorId]
+      properties:
+        vendorId:
+          type: integer
+        note:
+          type: ["string", "null"]

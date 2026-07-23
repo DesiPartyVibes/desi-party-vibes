@@ -27,6 +27,7 @@ function formatVendor(v: typeof vendorsTable.$inferSelect, categoryName: string)
     website: v.website,
     isActive: v.isActive,
     isFeatured: v.isFeatured,
+    isClaimed: v.userId != null,
     createdAt: v.createdAt.toISOString(),
   };
 }
