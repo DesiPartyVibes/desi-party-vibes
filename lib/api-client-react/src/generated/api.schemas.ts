@@ -51,6 +51,7 @@ export interface User {
   email: string;
   role: UserRole;
   isVerified: boolean;
+  emailVerified: boolean;
   /** @nullable */
   avatarUrl?: string | null;
   createdAt: string;
@@ -58,6 +59,38 @@ export interface User {
 
 export interface AuthResponse {
   user: User;
+}
+
+export interface RequestPasswordResetInput {
+  email: string;
+}
+
+export interface ConfirmPasswordResetInput {
+  email: string;
+  code: string;
+  newPassword: string;
+}
+
+export interface VerifyEmailInput {
+  email: string;
+  code: string;
+}
+
+export interface VerifyEmailResponse {
+  emailVerified: boolean;
+}
+
+export type ResendEmailOtpInputPurpose = typeof ResendEmailOtpInputPurpose[keyof typeof ResendEmailOtpInputPurpose];
+
+
+export const ResendEmailOtpInputPurpose = {
+  signup: 'signup',
+  password_reset: 'password_reset',
+} as const;
+
+export interface ResendEmailOtpInput {
+  email: string;
+  purpose: ResendEmailOtpInputPurpose;
 }
 
 export interface Category {
