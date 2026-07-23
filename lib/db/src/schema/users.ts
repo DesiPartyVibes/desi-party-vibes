@@ -11,6 +11,7 @@ export const usersTable = pgTable("users", {
   passwordHash: text("password_hash").notNull(),
   role: text("role", { enum: ["user", "vendor", "admin"] }).notNull().default("user"),
   isVerified: boolean("is_verified").notNull().default(false),
+  emailVerified: boolean("email_verified").notNull().default(false),
   avatarUrl: text("avatar_url"),
   phone: text("phone"),
   address: text("address"),
