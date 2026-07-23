@@ -14,7 +14,10 @@ import {
   useUpdateVendor,
   useDeleteVendor,
   useListCategories,
-  useAdminVerifyVendor
+  useAdminVerifyVendor,
+  useAdminListVendorClaims,
+  useAdminApproveVendorClaim,
+  useAdminRejectVendorClaim
 } from "@workspace/api-client-react";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,7 +33,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import { LayoutDashboard, Users, Store, CalendarRange, Plus, Edit2, Trash2 } from "lucide-react";
+import { LayoutDashboard, Users, Store, CalendarRange, Plus, Edit2, Trash2, ClipboardCheck } from "lucide-react";
 
 const vendorSchema = z.object({
   name: z.string().min(2),
@@ -57,6 +60,7 @@ export default function AdminDashboard() {
   const { data: vendors, refetch: refetchVendors } = useAdminListVendors({ query: { enabled: user?.role === 'admin' } });
   const { data: users, refetch: refetchUsers } = useAdminListUsers({ query: { enabled: user?.role === 'admin' } });
   const { data: bookings, refetch: refetchBookings } = useAdminListBookings({ query: { enabled: user?.role === 'admin' } });
+  const { data: claims, refetch: refetchClaims } = useAdminListVendorClaims({ query: { enabled: user?.role === 'admin' } });
   const { data: categories } = useListCategories();
 
   const updateStatus = useUpdateBookingStatus();
@@ -64,6 +68,8 @@ export default function AdminDashboard() {
   const updateVendor = useUpdateVendor();
   const deleteVendor = useDeleteVendor();
   const verifyVendor = useAdminVerifyVendor();
+  const approveClaim = useAdminApproveVendorClaim();
+  const rejectClaim = useAdminRejectVendorClaim();
 
   const [isVendorModalOpen, setIsVendorModalOpen] = useState(false);
   const [editingVendorId, setEditingVendorId] = useState<number | null>(null);
@@ -185,6 +191,31 @@ export default function AdminDashboard() {
     );
   };
 
+  const handleApproveClaim = (id: number) => {
+    approveClaim.mutate(
+      { id },
+      {
+        onSuccess: () => {
+          toast({ description: "Claim approved — listing linked to vendor account" });
+          refetchClaims();
+          refetchVendors();
+        }
+      }
+    );
+  };
+
+  const handleRejectClaim = (id: number) => {
+    rejectClaim.mutate(
+      { id },
+      {
+        onSuccess: () => {
+          toast({ description: "Claim rejected" });
+          refetchClaims();
+        }
+      }
+    );
+  };
+
   const handleDeleteVendor = (id: number) => {
     if (confirm("Are you sure you want to delete this vendor?")) {
       deleteVendor.mutate(
@@ -235,6 +266,7 @@ export default function AdminDashboard() {
             <TabsTrigger value="vendors" className="gap-2"><Store className="h-4 w-4"/> Vendors</TabsTrigger>
             <TabsTrigger value="users" className="gap-2"><Users className="h-4 w-4"/> Users</TabsTrigger>
             <TabsTrigger value="bookings" className="gap-2"><CalendarRange className="h-4 w-4"/> Bookings</TabsTrigger>
+            <TabsTrigger value="claims" className="gap-2"><ClipboardCheck className="h-4 w-4"/> Claims</TabsTrigger>
           </TabsList>
           
           <TabsContent value="vendors">
@@ -472,6 +504,60 @@ export default function AdminDashboard() {
                       </TableCell>
                     </TableRow>
                   ))}
+                </TableBody>
+              </Table>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="claims">
+            <Card>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Business</TableHead>
+                    <TableHead>Claimed By</TableHead>
+                    <TableHead>Note</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Submitted</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {claims?.map(c => (
+                    <TableRow key={c.id}>
+                      <TableCell className="font-medium">{c.vendorName}</TableCell>
+                      <TableCell>
+                        <div>{c.userName}</div>
+                        <div className="text-xs text-muted-foreground">{c.userEmail}</div>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground max-w-xs truncate">{c.note || "—"}</TableCell>
+                      <TableCell>
+                        <Badge variant={c.status === 'approved' ? 'default' : c.status === 'rejected' ? 'secondary' : 'outline'}>
+                          {c.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{format(new Date(c.createdAt), "MMM d, yyyy")}</TableCell>
+                      <TableCell className="text-right">
+                        {c.status === 'pending' && (
+                          <>
+                            <Button size="sm" onClick={() => handleApproveClaim(c.id)} disabled={approveClaim.isPending}>
+                              Approve
+                            </Button>
+                            <Button size="sm" variant="outline" className="ml-2" onClick={() => handleRejectClaim(c.id)} disabled={rejectClaim.isPending}>
+                              Reject
+                            </Button>
+                          </>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {claims?.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                        No claim requests yet.
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </Card>
