@@ -92,11 +92,11 @@ router.post("/items", async (req, res): Promise<void> => {
     return;
   }
 
-  const [plan] = await db.select().from(budgetPlansTable).where(eq(budgetPlansTable.userId, user.id)).limit(1);
-  if (!plan) {
-    res.status(404).json({ error: "No budget plan found — create a plan first" });
-    return;
-  }
+      let [plan] = await db.select().from(budgetPlansTable).where(eq(budgetPlansTable.userId, user.id)).limit(1);
+      if (!plan) {
+              // Auto-create a default plan so adding an item never dead-ends behind a separate "set your budget first" step the UI doesn't clearly prompt for.
+              [plan] = await db.insert(budgetPlansTable).values({ totalBudget: 0, eventName: "My Event", userId: user.id }).returning();
+      }
 
   const schema = z.object({
     category: z.string().min(1),
