@@ -57,7 +57,7 @@ export default function Categories() {
             {categories?.map((category) => {
               const Icon = categoryIcons[category.slug] || Sparkles;
               return (
-                <Link key={category.id} href={`/vendors?category=${category.id}`}>
+                <Link key={category.id} href={`/vendors?category=${category.slug}`}>
                   <Card className="h-full hover:border-primary/50 hover:shadow-lg transition-all cursor-pointer group text-center py-8 border-muted">
                     <CardContent className="p-0 flex flex-col items-center justify-center">
                       <div className="w-16 h-16 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-5 group-hover:scale-110 group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300 shadow-sm">
