@@ -122,9 +122,9 @@ export default function VendorDetail() {
       );
     } else {
       addFavorite.mutate(
-        { data: { vendorId } },
+        { vendorId },
         {
-          onSuccess: () => {
+                  onSuccess: () => {
             refetchFavorites();
             toast({ description: "Added to favorites" });
           }
