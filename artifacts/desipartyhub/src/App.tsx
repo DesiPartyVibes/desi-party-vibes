@@ -18,6 +18,7 @@ import Bookings from "@/pages/bookings";
 import AdminDashboard from "@/pages/admin";
 import VendorDashboard from "@/pages/vendor-dashboard";
 import ForgotPassword from "@/pages/forgot-password";
+import VerifyEmail from "@/pages/verify-email";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +29,7 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
       <Route path="/forgot-password" component={ForgotPassword} />
+      <Route path="/verify-email" component={VerifyEmail} />
       <Route path="/categories" component={Categories} />
       <Route path="/vendors" component={Vendors} />
       <Route path="/vendors/:id" component={VendorDetail} />

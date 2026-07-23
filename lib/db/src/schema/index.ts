@@ -2,6 +2,7 @@ export * from "./users";
 export * from "./categories";
 export * from "./vendors";
 export * from "./vendor_claims";
+export * from "./otp_codes";
 export * from "./reviews";
 export * from "./bookings";
 export * from "./favorites";

@@ -5,56 +5,88 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { useToast } from "@/hooks/use-toast";
-import { CheckCircle2, ArrowLeft, Loader2, Eye, EyeOff } from "lucide-react";
+import {
+  useRequestPasswordResetOtp,
+  useConfirmPasswordReset,
+  useResendEmailOtp,
+} from "@workspace/api-client-react";
+import { CheckCircle2, ArrowLeft, Loader2, Eye, EyeOff, Mail } from "lucide-react";
 
-type Step = "form" | "done";
+type Step = "request" | "confirm" | "done";
 
 export default function ForgotPassword() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
-  const [step, setStep] = useState<Step>("form");
-  const [emailOrPhone, setEmailOrPhone] = useState("");
-  const [inputError, setInputError] = useState("");
+  const [step, setStep] = useState<Step>("request");
+  const [email, setEmail] = useState("");
+  const [emailError, setEmailError] = useState("");
+
+  const [code, setCode] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [passwordError, setPasswordError] = useState("");
+  const [confirmError, setConfirmError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
 
-  async function handleReset(e: React.FormEvent) {
+  const requestOtp = useRequestPasswordResetOtp();
+  const confirmReset = useConfirmPasswordReset();
+  const resendOtp = useResendEmailOtp();
+
+  function handleRequest(e: React.FormEvent) {
     e.preventDefault();
-    setInputError("");
-    setPasswordError("");
+    setEmailError("");
 
-    const val = emailOrPhone.trim();
-    if (!val) { setInputError("Enter your email or phone number."); return; }
-    if (val.length < 4) { setInputError("Enter a valid email or phone number."); return; }
-    if (newPassword.length < 6) { setPasswordError("Password must be at least 6 characters."); return; }
-    if (newPassword !== confirmPassword) { setPasswordError("Passwords don't match."); return; }
-
-    setLoading(true);
-    try {
-      const apiBase = (import.meta.env.VITE_API_URL as string | undefined) ?? "";
-      const res = await fetch(`${apiBase}/api/auth/forgot-password`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ emailOrPhone: val, newPassword }),
-      });
-      const data = await res.json();
-      if (res.status === 404) {
-        setInputError("No account found with that email or phone number.");
-        return;
-      }
-      if (!res.ok) throw new Error(data.error || "Failed to reset password");
-      setStep("done");
-    } catch (err: any) {
-      toast({ variant: "destructive", title: "Error", description: err.message || "Something went wrong." });
-    } finally {
-      setLoading(false);
+    const val = email.trim();
+    if (!val || !/\S+@\S+\.\S+/.test(val)) {
+      setEmailError("Enter a valid email address.");
+      return;
     }
+
+    requestOtp.mutate(
+      { data: { email: val } },
+      {
+        onSuccess: () => {
+          toast({ description: "We've sent a 6-digit code to your email." });
+          setStep("confirm");
+        },
+        onError: (err: any) => {
+          setEmailError(err?.data?.error || "No account found with that email address.");
+        },
+      }
+    );
+  }
+
+  function handleConfirm(e: React.FormEvent) {
+    e.preventDefault();
+    setConfirmError("");
+
+    if (code.trim().length < 6) { setConfirmError("Enter the 6-digit code from your email."); return; }
+    if (newPassword.length < 6) { setConfirmError("Password must be at least 6 characters."); return; }
+    if (newPassword !== confirmPassword) { setConfirmError("Passwords don't match."); return; }
+
+    confirmReset.mutate(
+      { data: { email: email.trim(), code: code.trim(), newPassword } },
+      {
+        onSuccess: () => setStep("done"),
+        onError: (err: any) => {
+          setConfirmError(err?.data?.error || "That code is invalid or has expired.");
+        },
+      }
+    );
+  }
+
+  function handleResend() {
+    resendOtp.mutate(
+      { data: { email: email.trim(), purpose: "password_reset" } },
+      {
+        onSuccess: () => toast({ description: "A new code has been sent to your email." }),
+        onError: (err: any) => {
+          toast({ variant: "destructive", title: "Couldn't resend code", description: err?.data?.error || "Please try again." });
+        },
+      }
+    );
   }
 
   return (
@@ -62,8 +94,8 @@ export default function ForgotPassword() {
       <div className="flex-1 flex items-center justify-center py-12 px-4 bg-muted/30">
         <Card className="w-full max-w-md shadow-lg border-primary/10">
 
-          {/* ── Step 1: Reset password directly ── */}
-          {step === "form" && (
+          {/* ── Step 1: Request a code ── */}
+          {step === "request" && (
             <>
               <CardHeader className="space-y-3 text-center pb-6">
                 <div className="mx-auto mb-2">
@@ -71,23 +103,69 @@ export default function ForgotPassword() {
                 </div>
                 <CardTitle className="text-2xl font-serif font-bold">Forgot password?</CardTitle>
                 <CardDescription>
-                  Enter your email or mobile number and choose a new password.
+                  Enter your email and we'll send you a 6-digit code to reset your password.
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleReset} className="space-y-5">
+                <form onSubmit={handleRequest} className="space-y-5">
                   <div className="space-y-2">
-                    <Label htmlFor="emailOrPhone">Email or phone number</Label>
+                    <Label htmlFor="email">Email address</Label>
                     <Input
-                      id="emailOrPhone"
-                      type="text"
-                      placeholder=""
-                      value={emailOrPhone}
-                      onChange={(e) => { setEmailOrPhone(e.target.value); setInputError(""); }}
+                      id="email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => { setEmail(e.target.value); setEmailError(""); }}
                       autoFocus
                       inputMode="email"
                     />
-                    {inputError && <p className="text-sm text-destructive">{inputError}</p>}
+                    {emailError && <p className="text-sm text-destructive">{emailError}</p>}
+                  </div>
+
+                  <Button type="submit" className="w-full" disabled={requestOtp.isPending}>
+                    {requestOtp.isPending
+                      ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Sending code...</>
+                      : "Send reset code"}
+                  </Button>
+                </form>
+
+                <div className="mt-6 text-center text-sm">
+                  <Link
+                    href="/login"
+                    className="flex items-center justify-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <ArrowLeft className="h-3.5 w-3.5" /> Back to login
+                  </Link>
+                </div>
+              </CardContent>
+            </>
+          )}
+
+          {/* ── Step 2: Enter code + new password ── */}
+          {step === "confirm" && (
+            <>
+              <CardHeader className="space-y-3 text-center pb-6">
+                <div className="w-12 h-12 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-2">
+                  <Mail className="h-6 w-6" />
+                </div>
+                <CardTitle className="text-2xl font-serif font-bold">Check your email</CardTitle>
+                <CardDescription>
+                  Enter the 6-digit code we sent to <strong>{email}</strong> and choose a new password.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleConfirm} className="space-y-5">
+                  <div className="space-y-2 flex flex-col items-center">
+                    <Label>Verification code</Label>
+                    <InputOTP maxLength={6} value={code} onChange={setCode}>
+                      <InputOTPGroup>
+                        <InputOTPSlot index={0} />
+                        <InputOTPSlot index={1} />
+                        <InputOTPSlot index={2} />
+                        <InputOTPSlot index={3} />
+                        <InputOTPSlot index={4} />
+                        <InputOTPSlot index={5} />
+                      </InputOTPGroup>
+                    </InputOTP>
                   </div>
 
                   <div className="space-y-2">
@@ -97,7 +175,7 @@ export default function ForgotPassword() {
                         type={showPassword ? "text" : "password"}
                         placeholder="At least 6 characters"
                         value={newPassword}
-                        onChange={(e) => { setNewPassword(e.target.value); setPasswordError(""); }}
+                        onChange={(e) => { setNewPassword(e.target.value); setConfirmError(""); }}
                         className="pr-10"
                       />
                       <button
@@ -117,31 +195,42 @@ export default function ForgotPassword() {
                       type={showPassword ? "text" : "password"}
                       placeholder="Re-enter password"
                       value={confirmPassword}
-                      onChange={(e) => { setConfirmPassword(e.target.value); setPasswordError(""); }}
+                      onChange={(e) => { setConfirmPassword(e.target.value); setConfirmError(""); }}
                     />
-                    {passwordError && <p className="text-sm text-destructive">{passwordError}</p>}
+                    {confirmError && <p className="text-sm text-destructive">{confirmError}</p>}
                   </div>
 
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading
+                  <Button type="submit" className="w-full" disabled={confirmReset.isPending}>
+                    {confirmReset.isPending
                       ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Resetting...</>
                       : "Reset password"}
                   </Button>
                 </form>
 
-                <div className="mt-6 text-center text-sm">
-                  <Link
-                    href="/login"
-                    className="flex items-center justify-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
+                <div className="mt-6 text-center text-sm space-y-2">
+                  <button
+                    type="button"
+                    onClick={handleResend}
+                    disabled={resendOtp.isPending}
+                    className="text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2"
                   >
-                    <ArrowLeft className="h-3.5 w-3.5" /> Back to login
-                  </Link>
+                    Didn't get a code? Resend
+                  </button>
+                  <div>
+                    <button
+                      type="button"
+                      onClick={() => setStep("request")}
+                      className="flex items-center justify-center gap-1 mx-auto text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <ArrowLeft className="h-3.5 w-3.5" /> Use a different email
+                    </button>
+                  </div>
                 </div>
               </CardContent>
             </>
           )}
 
-          {/* ── Step 2: Done ── */}
+          {/* ── Step 3: Done ── */}
           {step === "done" && (
             <>
               <CardHeader className="space-y-3 text-center pb-6">

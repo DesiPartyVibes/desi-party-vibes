@@ -109,6 +109,82 @@ paths:
               schema:
                 $ref: "#/components/schemas/User"
 
+  /auth/forgot-password/request:
+    post:
+      operationId: requestPasswordResetOtp
+      tags: [users]
+      summary: Request a password reset code by email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RequestPasswordResetInput"
+      responses:
+        "200":
+          description: Code sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /auth/forgot-password/confirm:
+    post:
+      operationId: confirmPasswordReset
+      tags: [users]
+      summary: Confirm a password reset using the emailed code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConfirmPasswordResetInput"
+      responses:
+        "200":
+          description: Password reset
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /auth/verify-email:
+    post:
+      operationId: verifyEmail
+      tags: [users]
+      summary: Verify an account's email address using the emailed code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerifyEmailInput"
+      responses:
+        "200":
+          description: Email verified
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VerifyEmailResponse"
+
+  /auth/resend-email-otp:
+    post:
+      operationId: resendEmailOtp
+      tags: [users]
+      summary: Resend a signup or password-reset verification code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResendEmailOtpInput"
+      responses:
+        "200":
+          description: Code resent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
   # CATEGORIES
   /categories:
     get:
@@ -849,9 +925,53 @@ components:
         user:
           $ref: "#/components/schemas/User"
 
+    RequestPasswordResetInput:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+
+    ConfirmPasswordResetInput:
+      type: object
+      required: [email, code, newPassword]
+      properties:
+        email:
+          type: string
+        code:
+          type: string
+        newPassword:
+          type: string
+
+    VerifyEmailInput:
+      type: object
+      required: [email, code]
+      properties:
+        email:
+          type: string
+        code:
+          type: string
+
+    VerifyEmailResponse:
+      type: object
+      required: [emailVerified]
+      properties:
+        emailVerified:
+          type: boolean
+
+    ResendEmailOtpInput:
+      type: object
+      required: [email, purpose]
+      properties:
+        email:
+          type: string
+        purpose:
+          type: string
+          enum: [signup, password_reset]
+
     User:
       type: object
-      required: [id, name, email, role, isVerified, createdAt]
+      required: [id, name, email, role, isVerified, emailVerified, createdAt]
       properties:
         id:
           type: integer
@@ -863,6 +983,8 @@ components:
           type: string
           enum: [user, vendor, admin]
         isVerified:
+          type: boolean
+        emailVerified:
           type: boolean
         avatarUrl:
           type: ["string", "null"]

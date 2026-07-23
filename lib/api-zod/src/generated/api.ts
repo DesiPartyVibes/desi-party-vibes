@@ -45,6 +45,7 @@ export const LoginUserResponse = zod.object({
   "email": zod.string(),
   "role": zod.enum(['user', 'vendor', 'admin']),
   "isVerified": zod.boolean(),
+  "emailVerified": zod.boolean(),
   "avatarUrl": zod.string().nullish(),
   "createdAt": zod.string()
 })
@@ -68,8 +69,61 @@ export const GetCurrentUserResponse = zod.object({
   "email": zod.string(),
   "role": zod.enum(['user', 'vendor', 'admin']),
   "isVerified": zod.boolean(),
+  "emailVerified": zod.boolean(),
   "avatarUrl": zod.string().nullish(),
   "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Request a password reset code by email
+ */
+export const RequestPasswordResetOtpBody = zod.object({
+  "email": zod.string()
+})
+
+export const RequestPasswordResetOtpResponse = zod.object({
+  "message": zod.string()
+})
+
+
+/**
+ * @summary Confirm a password reset using the emailed code
+ */
+export const ConfirmPasswordResetBody = zod.object({
+  "email": zod.string(),
+  "code": zod.string(),
+  "newPassword": zod.string()
+})
+
+export const ConfirmPasswordResetResponse = zod.object({
+  "message": zod.string()
+})
+
+
+/**
+ * @summary Verify an account's email address using the emailed code
+ */
+export const VerifyEmailBody = zod.object({
+  "email": zod.string(),
+  "code": zod.string()
+})
+
+export const VerifyEmailResponse = zod.object({
+  "emailVerified": zod.boolean()
+})
+
+
+/**
+ * @summary Resend a signup or password-reset verification code
+ */
+export const ResendEmailOtpBody = zod.object({
+  "email": zod.string(),
+  "purpose": zod.enum(['signup', 'password_reset'])
+})
+
+export const ResendEmailOtpResponse = zod.object({
+  "message": zod.string()
 })
 
 
@@ -688,6 +742,7 @@ export const AdminListUsersResponseItem = zod.object({
   "email": zod.string(),
   "role": zod.enum(['user', 'vendor', 'admin']),
   "isVerified": zod.boolean(),
+  "emailVerified": zod.boolean(),
   "avatarUrl": zod.string().nullish(),
   "createdAt": zod.string()
 })

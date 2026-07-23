@@ -3,6 +3,8 @@ import { db } from "@workspace/db";
 import { vendorsTable, usersTable, bookingsTable, reviewsTable, categoriesTable, vendorClaimsTable } from "@workspace/db";
 import { eq, and, sql, desc, inArray } from "drizzle-orm";
 import { getSessionUser } from "../lib/auth.js";
+import { sendEmail } from "../lib/email.js";
+import { logger } from "../lib/logger.js";
 
 const router = Router();
 
@@ -128,6 +130,13 @@ router.patch("/users/:id/verify", async (req, res): Promise<void> => {
     .where(eq(usersTable.id, id))
     .returning();
 
+  // Fire-and-forget: fulfills the promise made in the pending-review email sent at signup.
+  sendEmail(
+    updated.email,
+    "Your DesiPartyVibes vendor account has been approved!",
+    `<p>Hi ${updated.firstName || updated.name},</p><p>Good news — your vendor account has been <strong>approved</strong>! Your business listing is now live on DesiPartyVibes and visible to couples planning their celebrations.</p><p><a href="https://www.desipartyvibes.com/vendor-dashboard">Visit your dashboard</a></p><p>— The DesiPartyVibes Team</p>`
+  ).catch((err) => logger.error({ err, userId: updated.id }, "Failed to send vendor approval email"));
+
   res.json({ id: updated.id, isVerified: updated.isVerified });
 });
 
@@ -245,6 +254,15 @@ router.patch("/vendor-claims/:id/approve", async (req, res): Promise<void> => {
 
   const [vendor] = await db.select().from(vendorsTable).where(eq(vendorsTable.id, updated.vendorId)).limit(1);
   const [claimUser] = await db.select().from(usersTable).where(eq(usersTable.id, updated.userId)).limit(1);
+
+  if (claimUser) {
+    // Fire-and-forget: let the vendor know their listing is now linked to their account.
+    sendEmail(
+      claimUser.email,
+      "Your business claim has been approved",
+      `<p>Hi ${claimUser.firstName || claimUser.name},</p><p>Your claim on <strong>${vendor?.name ?? "your listing"}</strong> has been approved! This listing is now linked to your account — manage it anytime from <a href="https://www.desipartyvibes.com/vendor-dashboard">My Business</a>.</p><p>— The DesiPartyVibes Team</p>`
+    ).catch((err) => logger.error({ err, claimId: updated.id }, "Failed to send claim approval email"));
+  }
 
   res.json(formatClaim(updated, vendor?.name ?? "", claimUser?.name ?? "", claimUser?.email ?? ""));
 });
