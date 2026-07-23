@@ -13,6 +13,7 @@ export interface User {
   email: string;
   role: UserRole;
   isVerified: boolean;
+  emailVerified: boolean;
   /** @nullable */
   avatarUrl?: string | null;
   createdAt: string;
