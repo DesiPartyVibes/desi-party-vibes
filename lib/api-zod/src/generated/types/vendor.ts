@@ -28,5 +28,6 @@ export interface Vendor {
   website?: string | null;
   isActive: boolean;
   isFeatured?: boolean;
+  isClaimed: boolean;
   createdAt: string;
 }
