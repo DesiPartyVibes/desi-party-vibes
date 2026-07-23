@@ -76,7 +76,7 @@ export default function Profile() {
                   Contact support to update your profile information or change your password.
                 </p>
                 <div className="flex gap-4">
-                  <Button variant="outline">Contact Support</Button>
+                                <Button variant="outline" onClick={() => { window.location.href = "mailto:raguramdhanunjan@gmail.com?subject=DesiPartyVibes%20Account%20Support"; }}>Contact Support</Button>
                 </div>
               </div>
             </CardContent>
