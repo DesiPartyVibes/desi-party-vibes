@@ -36,9 +36,11 @@ export default function ForgotPassword() {
 
     setLoading(true);
     try {
-      const res = await fetch("/api/auth/forgot-password", {
+      const apiBase = (import.meta.env.VITE_API_URL as string | undefined) ?? "";
+      const res = await fetch(`${apiBase}/api/auth/forgot-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ emailOrPhone: val, newPassword }),
       });
       const data = await res.json();
