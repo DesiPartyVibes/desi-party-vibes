@@ -4,6 +4,8 @@ import { usersTable, sessionsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import crypto from "crypto";
+import { sendEmail } from "../lib/email.js";
+import { logger } from "../lib/logger.js";
 
 const router = Router();
 
@@ -66,6 +68,15 @@ router.post("/register", async (req, res): Promise<void> => {
     phone,
     address,
   }).returning();
+
+    if (role === "vendor") {
+          // Fire-and-forget: a slow/misconfigured email provider should never block registration.
+          sendEmail(
+                  email,
+                  "Your DesiPartyVibes vendor account is pending review",
+                  `<p>Hi ${firstName},</p><p>Thanks for signing up as a vendor on DesiPartyVibes! Your account is currently <strong>pending verification</strong>. Our team will review your application, and you'll receive another email as soon as you're approved and live on the marketplace.</p><p>— The DesiPartyVibes Team</p>`
+                ).catch((err) => logger.error({ err, userId: user.id }, "Failed to send vendor pending-verification email"));
+    }
 
   const token = generateToken();
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
