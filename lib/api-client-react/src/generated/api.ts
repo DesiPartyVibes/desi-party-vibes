@@ -219,6 +219,77 @@ export const useRegisterUser = <TError = ErrorType<unknown>,
       return useMutation(getRegisterUserMutationOptions(options));
     }
 
+export const getConfirmSignupOtpUrl = () => {
+
+
+
+
+  return `/api/auth/register/verify`
+}
+
+/**
+ * @summary Confirm the signup verification code and log in
+ */
+export const confirmSignupOtp = async (verifyEmailInput: VerifyEmailInput, options?: RequestInit): Promise<AuthResponse> => {
+
+  return customFetch<AuthResponse>(getConfirmSignupOtpUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      verifyEmailInput,)
+  }
+);}
+
+
+
+
+export const getConfirmSignupOtpMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirmSignupOtp>>, TError,{data: BodyType<VerifyEmailInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof confirmSignupOtp>>, TError,{data: BodyType<VerifyEmailInput>}, TContext> => {
+
+const mutationKey = ['confirmSignupOtp'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof confirmSignupOtp>>, {data: BodyType<VerifyEmailInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  confirmSignupOtp(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ConfirmSignupOtpMutationResult = NonNullable<Awaited<ReturnType<typeof confirmSignupOtp>>>
+    export type ConfirmSignupOtpMutationBody = BodyType<VerifyEmailInput>
+    export type ConfirmSignupOtpMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Confirm the signup verification code and log in
+ */
+export const useConfirmSignupOtp = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirmSignupOtp>>, TError,{data: BodyType<VerifyEmailInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof confirmSignupOtp>>,
+        TError,
+        {data: BodyType<VerifyEmailInput>},
+        TContext
+      > => {
+      return useMutation(getConfirmSignupOtpMutationOptions(options));
+    }
+
 export const getLoginUserUrl = () => {
 
 
