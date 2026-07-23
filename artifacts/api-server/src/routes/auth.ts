@@ -74,7 +74,8 @@ router.post("/register", async (req, res): Promise<void> => {
   res.cookie("session_token", token, {
     httpOnly: true,
     expires: expiresAt,
-    sameSite: "lax",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    secure: process.env.NODE_ENV === "production",
   });
 
   res.status(201).json({
@@ -150,7 +151,8 @@ router.post("/login", async (req, res): Promise<void> => {
   res.cookie("session_token", token, {
     httpOnly: true,
     expires: expiresAt,
-    sameSite: "lax",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    secure: process.env.NODE_ENV === "production",
   });
 
   res.json({
