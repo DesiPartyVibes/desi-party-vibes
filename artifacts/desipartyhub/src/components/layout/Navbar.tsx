@@ -100,6 +100,11 @@ export function Navbar() {
                 <DropdownMenuItem asChild>
                   <Link href="/favorites">Favorites</Link>
                 </DropdownMenuItem>
+                {user.role === "vendor" && (
+                  <DropdownMenuItem asChild>
+                    <Link href="/vendor-dashboard">My Business</Link>
+                  </DropdownMenuItem>
+                )}
                 {user.role === "admin" && (
                   <DropdownMenuItem asChild>
                     <Link href="/admin">Admin Dashboard</Link>
@@ -151,6 +156,9 @@ export function Navbar() {
                 <Link href="/profile" className="text-sm font-medium" onClick={() => setMobileMenuOpen(false)}>Profile</Link>
                 <Link href="/bookings" className="text-sm font-medium" onClick={() => setMobileMenuOpen(false)}>My Bookings</Link>
                 <Link href="/favorites" className="text-sm font-medium" onClick={() => setMobileMenuOpen(false)}>Favorites</Link>
+                {user?.role === "vendor" && (
+                  <Link href="/vendor-dashboard" className="text-sm font-medium" onClick={() => setMobileMenuOpen(false)}>My Business</Link>
+                )}
                 {user?.role === "admin" && (
                   <Link href="/admin" className="text-sm font-medium" onClick={() => setMobileMenuOpen(false)}>Admin Dashboard</Link>
                 )}
