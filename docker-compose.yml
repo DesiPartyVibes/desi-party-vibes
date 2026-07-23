@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: dpv
+      POSTGRES_PASSWORD: dpv
+      POSTGRES_DB: desipartyvibes
+    ports:
+      - "5433:5432"
+    volumes:
+      - dpv_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  dpv_postgres_data:

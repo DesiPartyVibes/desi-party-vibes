@@ -95,10 +95,39 @@ router.get("/users", async (req, res): Promise<void> => {
       name: u.name,
       email: u.email,
       role: u.role,
+      isVerified: u.isVerified,
       avatarUrl: u.avatarUrl,
       createdAt: u.createdAt.toISOString(),
     }))
   );
+});
+
+router.patch("/users/:id/verify", async (req, res): Promise<void> => {
+  if (!(await requireAdmin(req, res))) return;
+
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) {
+    res.status(400).json({ error: "Invalid ID" });
+    return;
+  }
+
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, id)).limit(1);
+  if (!user) {
+    res.status(404).json({ error: "User not found" });
+    return;
+  }
+  if (user.role !== "vendor") {
+    res.status(400).json({ error: "Only vendor accounts can be verified" });
+    return;
+  }
+
+  const [updated] = await db
+    .update(usersTable)
+    .set({ isVerified: true })
+    .where(eq(usersTable.id, id))
+    .returning();
+
+  res.json({ id: updated.id, isVerified: updated.isVerified });
 });
 
 router.get("/stats", async (req, res): Promise<void> => {

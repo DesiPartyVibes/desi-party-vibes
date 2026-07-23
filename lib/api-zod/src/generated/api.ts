@@ -26,7 +26,7 @@ export const RegisterUserBody = zod.object({
   "password": zod.string(),
   "phone": zod.string(),
   "address": zod.string().optional(),
-  "role": zod.enum(['user', 'vendor', 'admin'])
+  "role": zod.enum(['user', 'vendor']).optional()
 })
 
 
@@ -44,6 +44,7 @@ export const LoginUserResponse = zod.object({
   "name": zod.string(),
   "email": zod.string(),
   "role": zod.enum(['user', 'vendor', 'admin']),
+  "isVerified": zod.boolean(),
   "avatarUrl": zod.string().nullish(),
   "createdAt": zod.string()
 })
@@ -66,6 +67,7 @@ export const GetCurrentUserResponse = zod.object({
   "name": zod.string(),
   "email": zod.string(),
   "role": zod.enum(['user', 'vendor', 'admin']),
+  "isVerified": zod.boolean(),
   "avatarUrl": zod.string().nullish(),
   "createdAt": zod.string()
 })
@@ -653,10 +655,24 @@ export const AdminListUsersResponseItem = zod.object({
   "name": zod.string(),
   "email": zod.string(),
   "role": zod.enum(['user', 'vendor', 'admin']),
+  "isVerified": zod.boolean(),
   "avatarUrl": zod.string().nullish(),
   "createdAt": zod.string()
 })
 export const AdminListUsersResponse = zod.array(AdminListUsersResponseItem)
+
+
+/**
+ * @summary Approve a pending vendor account
+ */
+export const AdminVerifyVendorParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const AdminVerifyVendorResponse = zod.object({
+  "id": zod.number(),
+  "isVerified": zod.boolean()
+})
 
 
 /**

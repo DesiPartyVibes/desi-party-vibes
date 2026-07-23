@@ -19,7 +19,6 @@ export type UserRegisterInputRole = typeof UserRegisterInputRole[keyof typeof Us
 export const UserRegisterInputRole = {
   user: 'user',
   vendor: 'vendor',
-  admin: 'admin',
 } as const;
 
 export interface UserRegisterInput {
@@ -29,7 +28,7 @@ export interface UserRegisterInput {
   password: string;
   phone: string;
   address?: string;
-  role: UserRegisterInputRole;
+  role?: UserRegisterInputRole;
 }
 
 export interface UserLoginInput {
@@ -51,6 +50,7 @@ export interface User {
   name: string;
   email: string;
   role: UserRole;
+  isVerified: boolean;
   /** @nullable */
   avatarUrl?: string | null;
   createdAt: string;
@@ -362,5 +362,10 @@ page?: number | null;
  * @nullable
  */
 limit?: number | null;
+};
+
+export type AdminVerifyVendor200 = {
+  id: number;
+  isVerified: boolean;
 };
 

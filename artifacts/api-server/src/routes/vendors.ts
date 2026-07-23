@@ -184,6 +184,10 @@ router.post("/", async (req, res): Promise<void> => {
     res.status(403).json({ error: "Forbidden" });
     return;
   }
+  if (user.role === "vendor" && !user.isVerified) {
+    res.status(403).json({ error: "Your vendor account is pending admin approval" });
+    return;
+  }
 
   const parsed = vendorInputSchema.safeParse(req.body);
   if (!parsed.success) {
