@@ -3,7 +3,13 @@ import { Link, useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useRegisterUser, useGetCurrentUser } from "@workspace/api-client-react";
+import {
+  useRegisterUser,
+  useGetCurrentUser,
+  useConfirmSignupOtp,
+  useResendEmailOtp,
+} from "@workspace/api-client-react";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,10 +21,11 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
-import { User, Store, Loader2, ChevronDown, Check, Eye, EyeOff } from "lucide-react";
+import { User, Store, Loader2, ChevronDown, Check, Eye, EyeOff, Mail, ArrowLeft } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -118,11 +125,18 @@ export default function Register() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const registerUser = useRegisterUser();
+  const confirmSignupOtp = useConfirmSignupOtp();
+  const resendOtp = useResendEmailOtp();
   const { data: currentUser, isLoading: userLoading } = useGetCurrentUser();
 
   const [countryCode, setCountryCode] = useState("+1");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+
+  const [step, setStep] = useState<"form" | "verify">("form");
+  const [pendingEmail, setPendingEmail] = useState("");
+  const [code, setCode] = useState("");
+  const [verifyError, setVerifyError] = useState("");
 
   const roleParam = new URLSearchParams(window.location.search).get("role");
 
@@ -165,12 +179,48 @@ export default function Register() {
       { data: { ...rest, address, phone } as any },
       {
         onSuccess: () => {
-          toast({ title: "Account created!", description: "Welcome to Desi Party Vibes!" });
-          window.location.href = "/";
+          toast({ description: "We've sent a 6-digit code to your email to finish signing up." });
+          setPendingEmail(values.email);
+          setStep("verify");
         },
         onError: (error: any) => {
           const msg = error?.response?.data?.error || error.message || "Registration failed.";
           toast({ variant: "destructive", title: "Registration failed", description: msg });
+        },
+      }
+    );
+  }
+
+  function handleVerify(e: React.FormEvent) {
+    e.preventDefault();
+    setVerifyError("");
+
+    if (code.trim().length < 6) {
+      setVerifyError("Enter the 6-digit code from your email.");
+      return;
+    }
+
+    confirmSignupOtp.mutate(
+      { data: { email: pendingEmail, code: code.trim() } },
+      {
+        onSuccess: () => {
+          toast({ title: "Account verified!", description: "Welcome to Desi Party Vibes!" });
+          window.location.href = "/";
+        },
+        onError: (err: any) => {
+          setVerifyError(err?.data?.error || "That code is invalid or has expired.");
+        },
+      }
+    );
+  }
+
+  function handleResend() {
+    resendOtp.mutate(
+      { data: { email: pendingEmail, purpose: "signup" } },
+      {
+        onSuccess: () => toast({ description: "A new code has been sent to your email." }),
+        onError: (err: any) => {
+          toast({ variant: "destructive", title: "Couldn't resend code", description: err?.data?.error || "Please try again." });
         },
       }
     );
@@ -183,6 +233,7 @@ export default function Register() {
       <div className="flex-1 flex items-center justify-center py-12 px-4 bg-muted/30">
         <Card className="w-full max-w-lg shadow-lg border-primary/10">
 
+          {step === "form" && (
           <>
               <CardHeader className="space-y-3 text-center pb-6">
                 <div className="mx-auto mb-2">
@@ -458,6 +509,66 @@ export default function Register() {
                 </div>
               </CardContent>
             </>
+          )}
+
+          {/* ── Step 2: Verify email with OTP ── */}
+          {step === "verify" && (
+            <>
+              <CardHeader className="space-y-3 text-center pb-6">
+                <div className="w-12 h-12 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-2">
+                  <Mail className="h-6 w-6" />
+                </div>
+                <CardTitle className="text-2xl font-serif font-bold">Check your email</CardTitle>
+                <CardDescription>
+                  Enter the 6-digit code we sent to <strong>{pendingEmail}</strong> to finish creating your account.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleVerify} className="space-y-5">
+                  <div className="space-y-2 flex flex-col items-center">
+                    <Label>Verification code</Label>
+                    <InputOTP maxLength={6} value={code} onChange={setCode}>
+                      <InputOTPGroup>
+                        <InputOTPSlot index={0} />
+                        <InputOTPSlot index={1} />
+                        <InputOTPSlot index={2} />
+                        <InputOTPSlot index={3} />
+                        <InputOTPSlot index={4} />
+                        <InputOTPSlot index={5} />
+                      </InputOTPGroup>
+                    </InputOTP>
+                    {verifyError && <p className="text-sm text-destructive">{verifyError}</p>}
+                  </div>
+
+                  <Button type="submit" className="w-full" disabled={confirmSignupOtp.isPending}>
+                    {confirmSignupOtp.isPending
+                      ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Verifying...</>
+                      : "Verify & create account"}
+                  </Button>
+                </form>
+
+                <div className="mt-6 text-center text-sm space-y-2">
+                  <button
+                    type="button"
+                    onClick={handleResend}
+                    disabled={resendOtp.isPending}
+                    className="text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2"
+                  >
+                    Didn't get a code? Resend
+                  </button>
+                  <div>
+                    <button
+                      type="button"
+                      onClick={() => setStep("form")}
+                      className="flex items-center justify-center gap-1 mx-auto text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <ArrowLeft className="h-3.5 w-3.5" /> Back
+                    </button>
+                  </div>
+                </div>
+              </CardContent>
+            </>
+          )}
 
         </Card>
       </div>

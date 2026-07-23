@@ -31,6 +31,28 @@ export const RegisterUserBody = zod.object({
 
 
 /**
+ * @summary Confirm the signup verification code and log in
+ */
+export const ConfirmSignupOtpBody = zod.object({
+  "email": zod.string(),
+  "code": zod.string()
+})
+
+export const ConfirmSignupOtpResponse = zod.object({
+  "user": zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "email": zod.string(),
+  "role": zod.enum(['user', 'vendor', 'admin']),
+  "isVerified": zod.boolean(),
+  "emailVerified": zod.boolean(),
+  "avatarUrl": zod.string().nullish(),
+  "createdAt": zod.string()
+})
+})
+
+
+/**
  * @summary Login
  */
 export const LoginUserBody = zod.object({
