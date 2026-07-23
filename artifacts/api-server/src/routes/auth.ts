@@ -125,18 +125,65 @@ router.post("/register", async (req, res): Promise<void> => {
     ).catch((err) => logger.error({ err, userId: user.id }, "Failed to send vendor pending-verification email"));
   }
 
-  // Fire-and-forget: send a signup email-verification code. Verifying is not
-  // required to use the account — it's surfaced as a dismissible prompt in
-  // the app (see /verify-email) rather than blocking login.
-  issueOtp(email, "signup")
-    .then((code) =>
-      sendEmail(
-        email,
-        "Verify your email for DesiPartyVibes",
-        otpEmailHtml(firstName, "Your verification code is:", code)
-      )
-    )
-    .catch((err) => logger.error({ err, userId: user.id }, "Failed to send signup verification email"));
+  // Send a signup email-verification code. Unlike the earlier design, the
+  // account is NOT logged in yet — no session is created here. The client
+  // must confirm this code via POST /register/verify before receiving a
+  // session cookie. We still await the send (rather than fire-and-forget)
+  // so a delivery failure surfaces to the user immediately instead of
+  // leaving them stuck on a "check your email" screen with no code coming.
+  try {
+    const code = await issueOtp(email, "signup");
+    await sendEmail(
+      email,
+      "Verify your email for DesiPartyVibes",
+      otpEmailHtml(firstName, "Your verification code is:", code)
+    );
+  } catch (err) {
+    logger.error({ err, userId: user.id }, "Failed to send signup verification email");
+    // The account exists but couldn't be sent a code — resend-email-otp lets
+    // the client retry from the verification screen, so we don't fail the
+    // whole registration over a transient email-provider hiccup.
+  }
+
+  res.status(201).json({
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      isVerified: user.isVerified,
+      emailVerified: user.emailVerified,
+      avatarUrl: user.avatarUrl,
+      createdAt: user.createdAt.toISOString(),
+    },
+  });
+});
+
+// POST /api/auth/register/verify
+// Confirms the signup OTP and — only on success — creates the session.
+// This is the gate the earlier "log in immediately" design skipped.
+router.post("/register/verify", async (req, res): Promise<void> => {
+  const parsed = z.object({ email: z.string().email(), code: z.string().min(4) }).safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Please provide your email and the verification code" });
+    return;
+  }
+
+  const email = parsed.data.email.trim();
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.email, email)).limit(1);
+  if (!user) {
+    res.status(404).json({ error: "No account found with that email address." });
+    return;
+  }
+
+  if (!user.emailVerified) {
+    const valid = await consumeOtp(email, "signup", parsed.data.code.trim());
+    if (!valid) {
+      res.status(400).json({ error: "That code is invalid or has expired. Please request a new one." });
+      return;
+    }
+    await db.update(usersTable).set({ emailVerified: true }).where(eq(usersTable.id, user.id));
+  }
 
   const token = generateToken();
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
@@ -149,14 +196,14 @@ router.post("/register", async (req, res): Promise<void> => {
     secure: process.env.NODE_ENV === "production",
   });
 
-  res.status(201).json({
+  res.json({
     user: {
       id: user.id,
       name: user.name,
       email: user.email,
       role: user.role,
       isVerified: user.isVerified,
-      emailVerified: user.emailVerified,
+      emailVerified: true,
       avatarUrl: user.avatarUrl,
       createdAt: user.createdAt.toISOString(),
     },
