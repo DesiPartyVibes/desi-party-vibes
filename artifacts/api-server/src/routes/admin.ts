@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { vendorsTable, usersTable, bookingsTable, reviewsTable, categoriesTable } from "@workspace/db";
-import { eq, sql, desc, inArray } from "drizzle-orm";
+import { vendorsTable, usersTable, bookingsTable, reviewsTable, categoriesTable, vendorClaimsTable } from "@workspace/db";
+import { eq, and, sql, desc, inArray } from "drizzle-orm";
 import { getSessionUser } from "../lib/auth.js";
 
 const router = Router();
@@ -43,6 +43,7 @@ router.get("/vendors", async (req, res): Promise<void> => {
       website: v.website,
       isActive: v.isActive,
       isFeatured: v.isFeatured,
+      isClaimed: v.userId != null,
       createdAt: v.createdAt.toISOString(),
     }))
   );
@@ -160,6 +161,119 @@ router.get("/stats", async (req, res): Promise<void> => {
     totalReviews: totalReviews.count,
     vendorsByCategory,
   });
+});
+
+function formatClaim(
+  c: typeof vendorClaimsTable.$inferSelect,
+  vendorName: string,
+  userName: string,
+  userEmail: string
+) {
+  return {
+    id: c.id,
+    vendorId: c.vendorId,
+    vendorName,
+    userId: c.userId,
+    userName,
+    userEmail,
+    status: c.status,
+    note: c.note,
+    createdAt: c.createdAt.toISOString(),
+    reviewedAt: c.reviewedAt ? c.reviewedAt.toISOString() : null,
+  };
+}
+
+router.get("/vendor-claims", async (req, res): Promise<void> => {
+  if (!(await requireAdmin(req, res))) return;
+
+  const claims = await db.select().from(vendorClaimsTable).orderBy(desc(vendorClaimsTable.createdAt));
+
+  const vendorIds = [...new Set(claims.map((c) => c.vendorId))];
+  const userIds = [...new Set(claims.map((c) => c.userId))];
+
+  const vendors = vendorIds.length > 0
+    ? await db.select().from(vendorsTable).where(inArray(vendorsTable.id, vendorIds))
+    : [];
+  const users = userIds.length > 0
+    ? await db.select().from(usersTable).where(inArray(usersTable.id, userIds))
+    : [];
+
+  const vendorMap: Record<number, string> = {};
+  for (const v of vendors) vendorMap[v.id] = v.name;
+  const userMap: Record<number, { name: string; email: string }> = {};
+  for (const u of users) userMap[u.id] = { name: u.name, email: u.email };
+
+  res.json(
+    claims.map((c) =>
+      formatClaim(c, vendorMap[c.vendorId] ?? "", userMap[c.userId]?.name ?? "", userMap[c.userId]?.email ?? "")
+    )
+  );
+});
+
+router.patch("/vendor-claims/:id/approve", async (req, res): Promise<void> => {
+  if (!(await requireAdmin(req, res))) return;
+
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) {
+    res.status(400).json({ error: "Invalid ID" });
+    return;
+  }
+
+  const [claim] = await db.select().from(vendorClaimsTable).where(eq(vendorClaimsTable.id, id)).limit(1);
+  if (!claim) {
+    res.status(404).json({ error: "Claim not found" });
+    return;
+  }
+  if (claim.status !== "pending") {
+    res.status(400).json({ error: "Claim has already been reviewed" });
+    return;
+  }
+
+  await db.update(vendorsTable).set({ userId: claim.userId }).where(eq(vendorsTable.id, claim.vendorId));
+
+  const [updated] = await db
+    .update(vendorClaimsTable)
+    .set({ status: "approved", reviewedAt: new Date() })
+    .where(eq(vendorClaimsTable.id, id))
+    .returning();
+
+  // Any other pending claims on the same listing are no longer valid once one is approved.
+  await db
+    .update(vendorClaimsTable)
+    .set({ status: "rejected", reviewedAt: new Date() })
+    .where(and(eq(vendorClaimsTable.vendorId, claim.vendorId), eq(vendorClaimsTable.status, "pending")));
+
+  const [vendor] = await db.select().from(vendorsTable).where(eq(vendorsTable.id, updated.vendorId)).limit(1);
+  const [claimUser] = await db.select().from(usersTable).where(eq(usersTable.id, updated.userId)).limit(1);
+
+  res.json(formatClaim(updated, vendor?.name ?? "", claimUser?.name ?? "", claimUser?.email ?? ""));
+});
+
+router.patch("/vendor-claims/:id/reject", async (req, res): Promise<void> => {
+  if (!(await requireAdmin(req, res))) return;
+
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) {
+    res.status(400).json({ error: "Invalid ID" });
+    return;
+  }
+
+  const [claim] = await db.select().from(vendorClaimsTable).where(eq(vendorClaimsTable.id, id)).limit(1);
+  if (!claim) {
+    res.status(404).json({ error: "Claim not found" });
+    return;
+  }
+
+  const [updated] = await db
+    .update(vendorClaimsTable)
+    .set({ status: "rejected", reviewedAt: new Date() })
+    .where(eq(vendorClaimsTable.id, id))
+    .returning();
+
+  const [vendor] = await db.select().from(vendorsTable).where(eq(vendorsTable.id, updated.vendorId)).limit(1);
+  const [claimUser] = await db.select().from(usersTable).where(eq(usersTable.id, updated.userId)).limit(1);
+
+  res.json(formatClaim(updated, vendor?.name ?? "", claimUser?.name ?? "", claimUser?.email ?? ""));
 });
 
 export default router;
