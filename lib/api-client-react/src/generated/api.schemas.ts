@@ -91,6 +91,7 @@ export interface Vendor {
   website?: string | null;
   isActive: boolean;
   isFeatured?: boolean;
+  isClaimed: boolean;
   createdAt: string;
 }
 
@@ -327,6 +328,36 @@ export interface AdminStats {
   pendingBookings: number;
   totalReviews: number;
   vendorsByCategory: CategoryCount[];
+}
+
+export type VendorClaimStatus = typeof VendorClaimStatus[keyof typeof VendorClaimStatus];
+
+
+export const VendorClaimStatus = {
+  pending: 'pending',
+  approved: 'approved',
+  rejected: 'rejected',
+} as const;
+
+export interface VendorClaim {
+  id: number;
+  vendorId: number;
+  vendorName: string;
+  userId: number;
+  userName: string;
+  userEmail: string;
+  status: VendorClaimStatus;
+  /** @nullable */
+  note?: string | null;
+  createdAt: string;
+  /** @nullable */
+  reviewedAt?: string | null;
+}
+
+export interface VendorClaimInput {
+  vendorId: number;
+  /** @nullable */
+  note?: string | null;
 }
 
 export type ListVendorsParams = {

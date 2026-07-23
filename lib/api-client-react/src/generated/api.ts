@@ -46,6 +46,8 @@ import type {
   UserLoginInput,
   UserRegisterInput,
   Vendor,
+  VendorClaim,
+  VendorClaimInput,
   VendorDetail,
   VendorInput,
   VendorListResponse,
@@ -1106,6 +1108,154 @@ export const useCreateReview = <TError = ErrorType<unknown>,
       > => {
       return useMutation(getCreateReviewMutationOptions(options));
     }
+
+export const getCreateVendorClaimUrl = () => {
+
+
+
+
+  return `/api/vendor-claims`
+}
+
+/**
+ * @summary Submit a claim request for an existing vendor listing
+ */
+export const createVendorClaim = async (vendorClaimInput: VendorClaimInput, options?: RequestInit): Promise<VendorClaim> => {
+
+  return customFetch<VendorClaim>(getCreateVendorClaimUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      vendorClaimInput,)
+  }
+);}
+
+
+
+
+export const getCreateVendorClaimMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createVendorClaim>>, TError,{data: BodyType<VendorClaimInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createVendorClaim>>, TError,{data: BodyType<VendorClaimInput>}, TContext> => {
+
+const mutationKey = ['createVendorClaim'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createVendorClaim>>, {data: BodyType<VendorClaimInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createVendorClaim(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateVendorClaimMutationResult = NonNullable<Awaited<ReturnType<typeof createVendorClaim>>>
+    export type CreateVendorClaimMutationBody = BodyType<VendorClaimInput>
+    export type CreateVendorClaimMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Submit a claim request for an existing vendor listing
+ */
+export const useCreateVendorClaim = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createVendorClaim>>, TError,{data: BodyType<VendorClaimInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createVendorClaim>>,
+        TError,
+        {data: BodyType<VendorClaimInput>},
+        TContext
+      > => {
+      return useMutation(getCreateVendorClaimMutationOptions(options));
+    }
+
+export const getListMyVendorClaimsUrl = () => {
+
+
+
+
+  return `/api/vendor-claims/mine`
+}
+
+/**
+ * @summary List the current vendor user's claim requests
+ */
+export const listMyVendorClaims = async ( options?: RequestInit): Promise<VendorClaim[]> => {
+
+  return customFetch<VendorClaim[]>(getListMyVendorClaimsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListMyVendorClaimsQueryKey = () => {
+    return [
+    `/api/vendor-claims/mine`
+    ] as const;
+    }
+
+
+export const getListMyVendorClaimsQueryOptions = <TData = Awaited<ReturnType<typeof listMyVendorClaims>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMyVendorClaims>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListMyVendorClaimsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listMyVendorClaims>>> = ({ signal }) => listMyVendorClaims({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listMyVendorClaims>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListMyVendorClaimsQueryResult = NonNullable<Awaited<ReturnType<typeof listMyVendorClaims>>>
+export type ListMyVendorClaimsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List the current vendor user's claim requests
+ */
+
+export function useListMyVendorClaims<TData = Awaited<ReturnType<typeof listMyVendorClaims>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMyVendorClaims>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListMyVendorClaimsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getListBookingsUrl = () => {
 
@@ -2648,6 +2798,223 @@ export const useAdminVerifyVendor = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getAdminVerifyVendorMutationOptions(options));
+    }
+
+export const getAdminListVendorClaimsUrl = () => {
+
+
+
+
+  return `/api/admin/vendor-claims`
+}
+
+/**
+ * @summary Admin list all vendor claim requests
+ */
+export const adminListVendorClaims = async ( options?: RequestInit): Promise<VendorClaim[]> => {
+
+  return customFetch<VendorClaim[]>(getAdminListVendorClaimsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminListVendorClaimsQueryKey = () => {
+    return [
+    `/api/admin/vendor-claims`
+    ] as const;
+    }
+
+
+export const getAdminListVendorClaimsQueryOptions = <TData = Awaited<ReturnType<typeof adminListVendorClaims>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListVendorClaims>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminListVendorClaimsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminListVendorClaims>>> = ({ signal }) => adminListVendorClaims({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminListVendorClaims>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminListVendorClaimsQueryResult = NonNullable<Awaited<ReturnType<typeof adminListVendorClaims>>>
+export type AdminListVendorClaimsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Admin list all vendor claim requests
+ */
+
+export function useAdminListVendorClaims<TData = Awaited<ReturnType<typeof adminListVendorClaims>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListVendorClaims>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminListVendorClaimsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getAdminApproveVendorClaimUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/vendor-claims/${id}/approve`
+}
+
+/**
+ * @summary Approve a vendor claim request, linking the vendor to the claiming user
+ */
+export const adminApproveVendorClaim = async (id: number, options?: RequestInit): Promise<VendorClaim> => {
+
+  return customFetch<VendorClaim>(getAdminApproveVendorClaimUrl(id),
+  {
+    ...options,
+    method: 'PATCH'
+
+
+  }
+);}
+
+
+
+
+export const getAdminApproveVendorClaimMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminApproveVendorClaim>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminApproveVendorClaim>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['adminApproveVendorClaim'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminApproveVendorClaim>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  adminApproveVendorClaim(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminApproveVendorClaimMutationResult = NonNullable<Awaited<ReturnType<typeof adminApproveVendorClaim>>>
+
+    export type AdminApproveVendorClaimMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Approve a vendor claim request, linking the vendor to the claiming user
+ */
+export const useAdminApproveVendorClaim = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminApproveVendorClaim>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminApproveVendorClaim>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getAdminApproveVendorClaimMutationOptions(options));
+    }
+
+export const getAdminRejectVendorClaimUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/vendor-claims/${id}/reject`
+}
+
+/**
+ * @summary Reject a vendor claim request
+ */
+export const adminRejectVendorClaim = async (id: number, options?: RequestInit): Promise<VendorClaim> => {
+
+  return customFetch<VendorClaim>(getAdminRejectVendorClaimUrl(id),
+  {
+    ...options,
+    method: 'PATCH'
+
+
+  }
+);}
+
+
+
+
+export const getAdminRejectVendorClaimMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminRejectVendorClaim>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminRejectVendorClaim>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['adminRejectVendorClaim'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminRejectVendorClaim>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  adminRejectVendorClaim(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminRejectVendorClaimMutationResult = NonNullable<Awaited<ReturnType<typeof adminRejectVendorClaim>>>
+
+    export type AdminRejectVendorClaimMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Reject a vendor claim request
+ */
+export const useAdminRejectVendorClaim = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminRejectVendorClaim>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminRejectVendorClaim>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getAdminRejectVendorClaimMutationOptions(options));
     }
 
 export const getGetAdminStatsUrl = () => {
