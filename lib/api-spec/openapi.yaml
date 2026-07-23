@@ -58,7 +58,26 @@ paths:
               $ref: "#/components/schemas/UserRegisterInput"
       responses:
         "201":
-          description: Registered
+          description: Registered (not yet logged in — a verification code was emailed)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+
+  /auth/register/verify:
+    post:
+      operationId: confirmSignupOtp
+      tags: [users]
+      summary: Confirm the signup verification code and log in
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerifyEmailInput"
+      responses:
+        "200":
+          description: Verified and logged in
           content:
             application/json:
               schema:
