@@ -49,18 +49,21 @@ export default function Budget() {
     setLocation("/login");
     return null;
   }
-
-  const handleUpdateBudgetSettings = () => {
-    upsertBudget.mutate(
-      { data: { totalBudget: Number(totalBudgetStr) || 0, eventName } },
-      {
-        onSuccess: () => {
-          toast({ description: "Budget settings saved" });
-          refetch();
-        }
+  
+const handleUpdateBudgetSettings = () => {
+  upsertBudget.mutate(
+    { data: { totalBudget: Number(totalBudgetStr) || 0, eventName } },
+    {
+      onSuccess: () => {
+        toast({ description: "Budget settings saved" });
+        refetch();
+      },
+      onError: () => {
+        toast({ variant: "destructive", title: "Error", description: "Failed to save budget settings." });
       }
+    }
     );
-  };
+};
 
   const handleAddItem = (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,9 +80,12 @@ export default function Budget() {
           setIsAddItemOpen(false);
           setNewItem({ name: "", category: "Venue", estimatedCost: "", actualCost: "" });
           refetch();
+        },
+        onError: () => {
+          toast({ variant: "destructive", title: "Error", description: "Failed to add item. Please try again." });
         }
       }
-    );
+  );
   };
 
   const handleDeleteItem = (id: number) => {
@@ -160,7 +166,7 @@ export default function Budget() {
 
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-serif font-bold">Line Items</h2>
-          <Dialog open={isAddItemOpen} onOpenChange={setIsAddItemOpen}>
+          <Dialog open={isAddItemOpen} onOpenChange={(open) => { setIsAddItemOpen(open); if (!open) setNewItem({ name: "", category: "Venue", estimatedCost: "", actualCost: "" }); }}>
             <DialogTrigger asChild>
               <Button><Plus className="h-4 w-4 mr-2" /> Add Item</Button>
             </DialogTrigger>
