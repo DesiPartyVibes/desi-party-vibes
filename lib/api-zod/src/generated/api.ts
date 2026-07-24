@@ -46,6 +46,7 @@ export const ConfirmSignupOtpResponse = zod.object({
   "role": zod.enum(['user', 'vendor', 'admin']),
   "isVerified": zod.boolean(),
   "emailVerified": zod.boolean(),
+  "isRejected": zod.boolean(),
   "avatarUrl": zod.string().nullish(),
   "createdAt": zod.string()
 })
@@ -68,6 +69,7 @@ export const LoginUserResponse = zod.object({
   "role": zod.enum(['user', 'vendor', 'admin']),
   "isVerified": zod.boolean(),
   "emailVerified": zod.boolean(),
+  "isRejected": zod.boolean(),
   "avatarUrl": zod.string().nullish(),
   "createdAt": zod.string()
 })
@@ -92,6 +94,7 @@ export const GetCurrentUserResponse = zod.object({
   "role": zod.enum(['user', 'vendor', 'admin']),
   "isVerified": zod.boolean(),
   "emailVerified": zod.boolean(),
+  "isRejected": zod.boolean(),
   "avatarUrl": zod.string().nullish(),
   "createdAt": zod.string()
 })
@@ -765,6 +768,7 @@ export const AdminListUsersResponseItem = zod.object({
   "role": zod.enum(['user', 'vendor', 'admin']),
   "isVerified": zod.boolean(),
   "emailVerified": zod.boolean(),
+  "isRejected": zod.boolean(),
   "avatarUrl": zod.string().nullish(),
   "createdAt": zod.string()
 })
@@ -780,7 +784,22 @@ export const AdminVerifyVendorParams = zod.object({
 
 export const AdminVerifyVendorResponse = zod.object({
   "id": zod.number(),
-  "isVerified": zod.boolean()
+  "isVerified": zod.boolean(),
+  "isRejected": zod.boolean()
+})
+
+
+/**
+ * @summary Reject a pending vendor account application
+ */
+export const AdminRejectVendorParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const AdminRejectVendorResponse = zod.object({
+  "id": zod.number(),
+  "isVerified": zod.boolean(),
+  "isRejected": zod.boolean()
 })
 
 
