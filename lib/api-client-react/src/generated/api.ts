@@ -20,6 +20,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AdminRejectVendor200,
   AdminStats,
   AdminVerifyVendor200,
   AuthResponse,
@@ -3158,6 +3159,76 @@ export const useAdminVerifyVendor = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getAdminVerifyVendorMutationOptions(options));
+    }
+
+export const getAdminRejectVendorUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/users/${id}/reject`
+}
+
+/**
+ * @summary Reject a pending vendor account application
+ */
+export const adminRejectVendor = async (id: number, options?: RequestInit): Promise<AdminRejectVendor200> => {
+
+  return customFetch<AdminRejectVendor200>(getAdminRejectVendorUrl(id),
+  {
+    ...options,
+    method: 'PATCH'
+
+
+  }
+);}
+
+
+
+
+export const getAdminRejectVendorMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminRejectVendor>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminRejectVendor>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['adminRejectVendor'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminRejectVendor>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  adminRejectVendor(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminRejectVendorMutationResult = NonNullable<Awaited<ReturnType<typeof adminRejectVendor>>>
+
+    export type AdminRejectVendorMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Reject a pending vendor account application
+ */
+export const useAdminRejectVendor = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminRejectVendor>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminRejectVendor>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getAdminRejectVendorMutationOptions(options));
     }
 
 export const getAdminListVendorClaimsUrl = () => {

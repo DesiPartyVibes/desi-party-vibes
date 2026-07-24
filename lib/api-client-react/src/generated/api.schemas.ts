@@ -52,6 +52,7 @@ export interface User {
   role: UserRole;
   isVerified: boolean;
   emailVerified: boolean;
+  isRejected: boolean;
   /** @nullable */
   avatarUrl?: string | null;
   createdAt: string;
@@ -431,5 +432,12 @@ limit?: number | null;
 export type AdminVerifyVendor200 = {
   id: number;
   isVerified: boolean;
+  isRejected: boolean;
+};
+
+export type AdminRejectVendor200 = {
+  id: number;
+  isVerified: boolean;
+  isRejected: boolean;
 };
 
