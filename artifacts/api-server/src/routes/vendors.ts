@@ -227,10 +227,30 @@ router.post("/", async (req, res): Promise<void> => {
   res.status(201).json(formatVendor(vendor, cat?.name ?? ""));
 });
 
+// Fields a vendor is allowed to edit on their own listing. isFeatured,
+// isActive, userId, rating, and reviewCount stay admin-only levers -
+// unknown keys are stripped by zod's default "strip" behavior, so this
+// schema doubles as the allowlist.
+const vendorSelfUpdateSchema = z.object({
+  name: z.string().min(1).optional(),
+  categoryId: z.number().int().optional(),
+  city: z.string().min(1).optional(),
+  state: z.string().min(1).optional(),
+  description: z.string().min(1).optional(),
+  longDescription: z.string().optional(),
+  priceMin: z.number().int().optional(),
+  priceMax: z.number().int().optional(),
+  imageUrl: z.string().url().optional(),
+  gallery: z.array(z.string()).optional(),
+  phone: z.string().optional(),
+  email: z.string().optional(),
+  website: z.string().optional(),
+});
+
 router.patch("/:id", async (req, res): Promise<void> => {
   const user = await getSessionUser(req);
-  if (!user || user.role !== "admin") {
-    res.status(403).json({ error: "Forbidden" });
+  if (!user) {
+    res.status(401).json({ error: "Not authenticated" });
     return;
   }
 
@@ -240,7 +260,41 @@ router.patch("/:id", async (req, res): Promise<void> => {
     return;
   }
 
-  const [vendor] = await db.update(vendorsTable).set(req.body).where(eq(vendorsTable.id, id)).returning();
+  const isAdmin = user.role === "admin";
+  let isOwner = false;
+  if (!isAdmin) {
+    const [claim] = await db
+      .select()
+      .from(vendorClaimsTable)
+      .where(
+        and(
+          eq(vendorClaimsTable.vendorId, id),
+          eq(vendorClaimsTable.userId, user.id),
+          eq(vendorClaimsTable.status, "approved")
+        )
+      )
+      .limit(1);
+    isOwner = !!claim;
+  }
+
+  if (!isAdmin && !isOwner) {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
+
+  let updateData: Record<string, unknown>;
+  if (isAdmin) {
+    updateData = req.body;
+  } else {
+    const parsed = vendorSelfUpdateSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: "Invalid input" });
+      return;
+    }
+    updateData = parsed.data;
+  }
+
+  const [vendor] = await db.update(vendorsTable).set(updateData).where(eq(vendorsTable.id, id)).returning();
   if (!vendor) {
     res.status(404).json({ error: "Vendor not found" });
     return;
