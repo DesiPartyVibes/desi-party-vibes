@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { vendorsTable, categoriesTable, reviewsTable } from "@workspace/db";
+import { vendorsTable, categoriesTable, reviewsTable, vendorClaimsTable } from "@workspace/db";
 import { eq, and, gte, lte, ilike, sql, desc, or, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { getSessionUser } from "../lib/auth.js";
@@ -200,8 +200,27 @@ router.post("/", async (req, res): Promise<void> => {
     ...parsed.data,
     gallery: parsed.data.gallery ?? [],
     isActive: true,
-    isFeatured: parsed.data.isFeatured ?? false,
+    // Self-featuring stays an admin-only lever.
+    isFeatured: user.role === "admin" ? (parsed.data.isFeatured ?? false) : false,
+    // A vendor registering their own business owns it immediately.
+    // Admin-created listings stay unclaimed until a vendor claims them
+    // through POST /vendor-claims.
+    userId: user.role === "vendor" ? user.id : null,
   }).returning();
+
+  if (user.role === "vendor") {
+    // vendor-dashboard.tsx (and everywhere else) treats an approved row in
+    // vendor_claims as "this is the vendor's business" rather than checking
+    // vendors.userId directly, so a self-registered listing needs the same
+    // auto-approved claim record a reviewed claim would get.
+    await db.insert(vendorClaimsTable).values({
+      vendorId: vendor.id,
+      userId: user.id,
+      status: "approved",
+      note: "Auto-approved: vendor self-registered this listing.",
+      reviewedAt: new Date(),
+    });
+  }
 
   const [cat] = await db.select().from(categoriesTable).where(eq(categoriesTable.id, vendor.categoryId)).limit(1);
 
