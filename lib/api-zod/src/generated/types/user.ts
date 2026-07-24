@@ -14,6 +14,7 @@ export interface User {
   role: UserRole;
   isVerified: boolean;
   emailVerified: boolean;
+  isRejected: boolean;
   /** @nullable */
   avatarUrl?: string | null;
   createdAt: string;

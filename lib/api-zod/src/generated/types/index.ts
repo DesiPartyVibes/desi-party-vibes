@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './adminRejectVendor200';
 export * from './adminStats';
 export * from './adminVerifyVendor200';
 export * from './authResponse';
