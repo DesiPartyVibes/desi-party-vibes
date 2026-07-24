@@ -452,6 +452,25 @@ export const CreateBookingBody = zod.object({
 
 
 /**
+ * @summary List booking requests against listings the current user owns
+ */
+export const ListVendorBookingsResponseItem = zod.object({
+  "id": zod.number(),
+  "vendorId": zod.number(),
+  "vendorName": zod.string(),
+  "userId": zod.number(),
+  "userName": zod.string(),
+  "eventDate": zod.string(),
+  "eventType": zod.string(),
+  "guestCount": zod.number(),
+  "message": zod.string(),
+  "status": zod.enum(['pending', 'confirmed', 'cancelled', 'completed']),
+  "createdAt": zod.string()
+})
+export const ListVendorBookingsResponse = zod.array(ListVendorBookingsResponseItem)
+
+
+/**
  * @summary Update booking status
  */
 export const UpdateBookingStatusParams = zod.object({
