@@ -99,6 +99,8 @@ router.get("/users", async (req, res): Promise<void> => {
       email: u.email,
       role: u.role,
       isVerified: u.isVerified,
+      emailVerified: u.emailVerified,
+      isRejected: !!u.rejectedAt,
       avatarUrl: u.avatarUrl,
       createdAt: u.createdAt.toISOString(),
     }))
@@ -137,7 +139,46 @@ router.patch("/users/:id/verify", async (req, res): Promise<void> => {
     `<p>Hi ${updated.firstName || updated.name},</p><p>Good news — your vendor account has been <strong>approved</strong>! Your business listing is now live on DesiPartyVibes and visible to couples planning their celebrations.</p><p><a href="https://www.desipartyvibes.com/vendor-dashboard">Visit your dashboard</a></p><p>— The DesiPartyVibes Team</p>`
   ).catch((err) => logger.error({ err, userId: updated.id }, "Failed to send vendor approval email"));
 
-  res.json({ id: updated.id, isVerified: updated.isVerified });
+  res.json({ id: updated.id, isVerified: updated.isVerified, isRejected: !!updated.rejectedAt });
+});
+
+router.patch("/users/:id/reject", async (req, res): Promise<void> => {
+  if (!(await requireAdmin(req, res))) return;
+
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) {
+    res.status(400).json({ error: "Invalid ID" });
+    return;
+  }
+
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, id)).limit(1);
+  if (!user) {
+    res.status(404).json({ error: "User not found" });
+    return;
+  }
+  if (user.role !== "vendor") {
+    res.status(400).json({ error: "Only vendor accounts can be rejected" });
+    return;
+  }
+  if (user.isVerified) {
+    res.status(400).json({ error: "This vendor account is already verified" });
+    return;
+  }
+
+  const [updated] = await db
+    .update(usersTable)
+    .set({ rejectedAt: new Date() })
+    .where(eq(usersTable.id, id))
+    .returning();
+
+  // Fire-and-forget: let the applicant know their vendor application wasn't approved.
+  sendEmail(
+    updated.email,
+    "Update on your DesiPartyVibes vendor application",
+    `<p>Hi ${updated.firstName || updated.name},</p><p>Thanks for your interest in listing your business on DesiPartyVibes. After review, we're not able to approve your vendor account at this time.</p><p>If you believe this was a mistake or have questions, please reach out to our support team.</p><p>— The DesiPartyVibes Team</p>`
+  ).catch((err) => logger.error({ err, userId: updated.id }, "Failed to send vendor rejection email"));
+
+  res.json({ id: updated.id, isVerified: updated.isVerified, isRejected: !!updated.rejectedAt });
 });
 
 router.get("/stats", async (req, res): Promise<void> => {
@@ -290,6 +331,15 @@ router.patch("/vendor-claims/:id/reject", async (req, res): Promise<void> => {
 
   const [vendor] = await db.select().from(vendorsTable).where(eq(vendorsTable.id, updated.vendorId)).limit(1);
   const [claimUser] = await db.select().from(usersTable).where(eq(usersTable.id, updated.userId)).limit(1);
+
+  if (claimUser) {
+    // Fire-and-forget: let the vendor know their claim wasn't approved, so they aren't left wondering.
+    sendEmail(
+      claimUser.email,
+      "Your business claim was not approved",
+      `<p>Hi ${claimUser.firstName || claimUser.name},</p><p>Your claim on <strong>${vendor?.name ?? "that listing"}</strong> was not approved. If you believe this was a mistake or have questions, please reach out to our support team.</p><p>— The DesiPartyVibes Team</p>`
+    ).catch((err) => logger.error({ err, claimId: updated.id }, "Failed to send claim rejection email"));
+  }
 
   res.json(formatClaim(updated, vendor?.name ?? "", claimUser?.name ?? "", claimUser?.email ?? ""));
 });
