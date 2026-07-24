@@ -255,7 +255,15 @@ export default function VendorDashboard() {
       </div>
 
       <div className="container mx-auto px-4 py-8 max-w-3xl space-y-6">
-        {!user?.isVerified && (
+        {!user?.isVerified && user?.isRejected && (
+          <Card className="border-destructive/30 bg-destructive/5">
+            <CardContent className="pt-6 text-destructive">
+              Your vendor application was not approved. If you believe this was a mistake or have questions, please contact our support team.
+            </CardContent>
+          </Card>
+        )}
+
+        {!user?.isVerified && !user?.isRejected && (
           <Card className="border-amber-200 bg-amber-50 dark:bg-amber-950/20">
             <CardContent className="pt-6 text-amber-800 dark:text-amber-500">
               Your vendor account is pending admin approval. You'll be able to claim or register a business listing once approved.

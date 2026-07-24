@@ -15,6 +15,7 @@ import {
   useDeleteVendor,
   useListCategories,
   useAdminVerifyVendor,
+  useAdminRejectVendor,
   useAdminListVendorClaims,
   useAdminApproveVendorClaim,
   useAdminRejectVendorClaim
@@ -68,6 +69,7 @@ export default function AdminDashboard() {
   const updateVendor = useUpdateVendor();
   const deleteVendor = useDeleteVendor();
   const verifyVendor = useAdminVerifyVendor();
+  const rejectVendor = useAdminRejectVendor();
   const approveClaim = useAdminApproveVendorClaim();
   const rejectClaim = useAdminRejectVendorClaim();
 
@@ -187,6 +189,26 @@ export default function AdminDashboard() {
           toast({ description: "Vendor approved" });
           refetchUsers();
         }
+      }
+    );
+  };
+
+  const handleRejectVendor = (id: number) => {
+    if (!confirm("Reject this vendor application? They'll be notified by email.")) return;
+    rejectVendor.mutate(
+      { id },
+      {
+        onSuccess: () => {
+          toast({ description: "Vendor application rejected" });
+          refetchUsers();
+        },
+        onError: (err: any) => {
+          toast({
+            variant: "destructive",
+            title: "Couldn't reject vendor",
+            description: err?.data?.error || "Please try again.",
+          });
+        },
       }
     );
   };
@@ -442,21 +464,34 @@ export default function AdminDashboard() {
                       </TableCell>
                       <TableCell>
                         {u.role === 'vendor' && (
-                          <Badge variant={u.isVerified ? "default" : "outline"}>
-                            {u.isVerified ? "Verified" : "Pending"}
+                          <Badge variant={u.isVerified ? "default" : u.isRejected ? "destructive" : "outline"}>
+                            {u.isVerified ? "Verified" : u.isRejected ? "Rejected" : "Pending"}
                           </Badge>
                         )}
                       </TableCell>
                       <TableCell>{format(new Date(u.createdAt), "MMM d, yyyy")}</TableCell>
                       <TableCell className="text-right">
                         {u.role === 'vendor' && !u.isVerified && (
-                          <Button
-                            size="sm"
-                            onClick={() => handleVerifyVendor(u.id)}
-                            disabled={verifyVendor.isPending}
-                          >
-                            Approve
-                          </Button>
+                          <>
+                            <Button
+                              size="sm"
+                              onClick={() => handleVerifyVendor(u.id)}
+                              disabled={verifyVendor.isPending}
+                            >
+                              Approve
+                            </Button>
+                            {!u.isRejected && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="ml-2"
+                                onClick={() => handleRejectVendor(u.id)}
+                                disabled={rejectVendor.isPending}
+                              >
+                                Reject
+                              </Button>
+                            )}
+                          </>
                         )}
                       </TableCell>
                     </TableRow>
