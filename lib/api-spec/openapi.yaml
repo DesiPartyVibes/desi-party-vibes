@@ -818,11 +818,40 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [id, isVerified]
+                required: [id, isVerified, isRejected]
                 properties:
                   id:
                     type: integer
                   isVerified:
+                    type: boolean
+                  isRejected:
+                    type: boolean
+
+  /admin/users/{id}/reject:
+    patch:
+      operationId: adminRejectVendor
+      tags: [admin]
+      summary: Reject a pending vendor account application
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Vendor rejected
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [id, isVerified, isRejected]
+                properties:
+                  id:
+                    type: integer
+                  isVerified:
+                    type: boolean
+                  isRejected:
                     type: boolean
 
   /admin/vendor-claims:
@@ -990,7 +1019,7 @@ components:
 
     User:
       type: object
-      required: [id, name, email, role, isVerified, emailVerified, createdAt]
+      required: [id, name, email, role, isVerified, emailVerified, isRejected, createdAt]
       properties:
         id:
           type: integer
@@ -1004,6 +1033,8 @@ components:
         isVerified:
           type: boolean
         emailVerified:
+          type: boolean
+        isRejected:
           type: boolean
         avatarUrl:
           type: ["string", "null"]
