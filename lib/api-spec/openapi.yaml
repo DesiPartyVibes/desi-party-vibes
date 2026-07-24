@@ -476,6 +476,21 @@ paths:
               schema:
                 $ref: "#/components/schemas/Booking"
 
+  /bookings/vendor:
+    get:
+      operationId: listVendorBookings
+      tags: [bookings]
+      summary: List booking requests against listings the current user owns
+      responses:
+        "200":
+          description: Bookings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Booking"
+
   /bookings/{id}:
     patch:
       operationId: updateBookingStatus
