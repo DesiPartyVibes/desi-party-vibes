@@ -6,7 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type AdminVerifyVendor200 = {
+export type AdminRejectVendor200 = {
   id: number;
   isVerified: boolean;
   isRejected: boolean;
