@@ -1766,6 +1766,83 @@ export const useCreateBooking = <TError = ErrorType<unknown>,
       return useMutation(getCreateBookingMutationOptions(options));
     }
 
+export const getListVendorBookingsUrl = () => {
+
+
+
+
+  return `/api/bookings/vendor`
+}
+
+/**
+ * @summary List booking requests against listings the current user owns
+ */
+export const listVendorBookings = async ( options?: RequestInit): Promise<Booking[]> => {
+
+  return customFetch<Booking[]>(getListVendorBookingsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListVendorBookingsQueryKey = () => {
+    return [
+    `/api/bookings/vendor`
+    ] as const;
+    }
+
+
+export const getListVendorBookingsQueryOptions = <TData = Awaited<ReturnType<typeof listVendorBookings>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listVendorBookings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListVendorBookingsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listVendorBookings>>> = ({ signal }) => listVendorBookings({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listVendorBookings>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListVendorBookingsQueryResult = NonNullable<Awaited<ReturnType<typeof listVendorBookings>>>
+export type ListVendorBookingsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List booking requests against listings the current user owns
+ */
+
+export function useListVendorBookings<TData = Awaited<ReturnType<typeof listVendorBookings>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listVendorBookings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListVendorBookingsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
 export const getUpdateBookingStatusUrl = (id: number,) => {
 
 
