@@ -983,10 +983,17 @@ components:
 
     AuthResponse:
       type: object
-      required: [user]
+      required: [user, token]
       properties:
         user:
           $ref: "#/components/schemas/User"
+        token:
+          type: string
+          description: >-
+            Session token. The API also sets this as an httpOnly cookie, but
+            clients (especially cross-origin web clients subject to
+            third-party cookie blocking) should store this and send it as
+            `Authorization: Bearer <token>` on subsequent requests.
 
     RequestPasswordResetInput:
       type: object
