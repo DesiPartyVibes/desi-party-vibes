@@ -49,7 +49,8 @@ export const ConfirmSignupOtpResponse = zod.object({
   "isRejected": zod.boolean(),
   "avatarUrl": zod.string().nullish(),
   "createdAt": zod.string()
-})
+}),
+  "token": zod.string().describe('Session token. The API also sets this as an httpOnly cookie, but clients (especially cross-origin web clients subject to third-party cookie blocking) should store this and send it as `Authorization: Bearer <token>` on subsequent requests.')
 })
 
 
@@ -72,7 +73,8 @@ export const LoginUserResponse = zod.object({
   "isRejected": zod.boolean(),
   "avatarUrl": zod.string().nullish(),
   "createdAt": zod.string()
-})
+}),
+  "token": zod.string().describe('Session token. The API also sets this as an httpOnly cookie, but clients (especially cross-origin web clients subject to third-party cookie blocking) should store this and send it as `Authorization: Bearer <token>` on subsequent requests.')
 })
 
 
