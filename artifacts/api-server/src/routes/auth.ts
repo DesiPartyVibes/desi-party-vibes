@@ -6,6 +6,7 @@ import { z } from "zod";
 import crypto from "crypto";
 import { sendEmail } from "../lib/email.js";
 import { logger } from "../lib/logger.js";
+import { extractSessionToken } from "../lib/auth.js";
 
 const router = Router();
 
@@ -198,6 +199,7 @@ router.post("/register/verify", async (req, res): Promise<void> => {
   });
 
   res.json({
+    token,
     user: {
       id: user.id,
       name: user.name,
@@ -370,6 +372,7 @@ router.post("/login", async (req, res): Promise<void> => {
   });
 
   res.json({
+    token,
     user: {
       id: user.id,
       name: user.name,
@@ -385,16 +388,16 @@ router.post("/login", async (req, res): Promise<void> => {
 });
 
 router.post("/logout", async (req, res): Promise<void> => {
-  const token = req.cookies?.session_token;
+  const token = extractSessionToken(req);
   if (token) {
     await db.delete(sessionsTable).where(eq(sessionsTable.token, token));
-    res.clearCookie("session_token");
   }
+  res.clearCookie("session_token");
   res.json({ message: "Logged out" });
 });
 
 router.get("/me", async (req, res): Promise<void> => {
-  const token = req.cookies?.session_token;
+  const token = extractSessionToken(req);
   if (!token) {
     res.status(401).json({ error: "Not authenticated" });
     return;
