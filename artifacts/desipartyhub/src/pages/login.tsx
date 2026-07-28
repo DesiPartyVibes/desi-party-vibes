@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useLoginUser, useGetCurrentUser } from "@workspace/api-client-react";
+import { setStoredToken } from "@/lib/auth-token";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import {
@@ -48,7 +49,8 @@ export default function Login() {
     loginUser.mutate(
       { data: values },
       {
-        onSuccess: () => {
+        onSuccess: (data) => {
+          setStoredToken(data.token);
           toast({
             title: "Welcome back!",
             description: "You have successfully logged in.",

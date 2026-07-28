@@ -9,6 +9,7 @@ import {
   useConfirmSignupOtp,
   useResendEmailOtp,
 } from "@workspace/api-client-react";
+import { setStoredToken } from "@/lib/auth-token";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
@@ -203,7 +204,8 @@ export default function Register() {
     confirmSignupOtp.mutate(
       { data: { email: pendingEmail, code: code.trim() } },
       {
-        onSuccess: () => {
+        onSuccess: (data) => {
+          setStoredToken(data.token);
           toast({ title: "Account verified!", description: "Welcome to Desi Party Vibes!" });
           window.location.href = "/";
         },
