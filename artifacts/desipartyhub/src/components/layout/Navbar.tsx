@@ -1,5 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { useGetCurrentUser, useLogoutUser } from "@workspace/api-client-react";
+import { setStoredToken } from "@/lib/auth-token";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -22,6 +23,13 @@ export function Navbar() {
   const handleLogout = () => {
     logoutUser.mutate(undefined, {
       onSuccess: () => {
+        setStoredToken(null);
+        window.location.href = "/";
+      },
+      onError: () => {
+        // Clear the local token even if the request failed (e.g. session
+        // already expired server-side) so the UI doesn't stay "stuck" logged in.
+        setStoredToken(null);
         window.location.href = "/";
       },
     });
