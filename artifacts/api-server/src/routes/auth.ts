@@ -32,7 +32,7 @@ function generateOtp(): string {
   return crypto.randomInt(100000, 1000000).toString();
 }
 
-async function issueOtp(identifier: string, purpose: "signup" | "password_reset"): Promise<string> {
+async function issueOtp(identifier: string, purpose: "signup" | "password_reset" | "login"): Promise<string> {
   const code = generateOtp();
   await db.insert(otpCodesTable).values({
     identifier,
@@ -45,7 +45,7 @@ async function issueOtp(identifier: string, purpose: "signup" | "password_reset"
 
 async function consumeOtp(
   identifier: string,
-  purpose: "signup" | "password_reset",
+  purpose: "signup" | "password_reset" | "login",
   code: string
 ): Promise<boolean> {
   const [row] = await db
@@ -311,7 +311,7 @@ router.post("/resend-email-otp", async (req, res): Promise<void> => {
   const parsed = z
     .object({
       email: z.string().email(),
-      purpose: z.enum(["signup", "password_reset"]),
+      purpose: z.enum(["signup", "password_reset", "login"]),
     })
     .safeParse(req.body);
   if (!parsed.success) {
@@ -335,9 +335,15 @@ router.post("/resend-email-otp", async (req, res): Promise<void> => {
   const subject =
     parsed.data.purpose === "signup"
       ? "Verify your email for DesiPartyVibes"
+      : parsed.data.purpose === "login"
+      ? "Your DesiPartyVibes login code"
       : "Your DesiPartyVibes password reset code";
   const intro =
-    parsed.data.purpose === "signup" ? "Your verification code is:" : "Your password reset code is:";
+    parsed.data.purpose === "signup"
+      ? "Your verification code is:"
+      : parsed.data.purpose === "login"
+      ? "Your login code is:"
+      : "Your password reset code is:";
 
   sendEmail(email, subject, otpEmailHtml(user.firstName || user.name, intro, code)).catch((err) =>
     logger.error({ err, email, purpose: parsed.data.purpose }, "Failed to resend OTP email")
@@ -346,6 +352,11 @@ router.post("/resend-email-otp", async (req, res): Promise<void> => {
   res.json({ message: "A new code has been sent to your email." });
 });
 
+// POST /api/auth/login
+// Checks the password, then emails a one-time code instead of creating a
+// session directly. The session is only created once that code is confirmed
+// via POST /login/verify below — this is an OTP-on-every-login requirement,
+// distinct from the signup/forgot-password OTP flows.
 router.post("/login", async (req, res): Promise<void> => {
   const parsed = loginSchema.safeParse(req.body);
   if (!parsed.success) {
@@ -357,6 +368,44 @@ router.post("/login", async (req, res): Promise<void> => {
   const [user] = await db.select().from(usersTable).where(eq(usersTable.email, email)).limit(1);
   if (!user || user.passwordHash !== hashPassword(password)) {
     res.status(401).json({ error: "Invalid credentials" });
+    return;
+  }
+
+  try {
+    const code = await issueOtp(email, "login");
+    await sendEmail(
+      email,
+      "Your DesiPartyVibes login code",
+      otpEmailHtml(user.firstName || user.name, "Your login code is:", code)
+    );
+  } catch (err) {
+    logger.error({ err, userId: user.id }, "Failed to send login verification email");
+    res.status(500).json({ error: "Couldn't send a login code right now. Please try again." });
+    return;
+  }
+
+  res.json({ requiresOtp: true, email: user.email });
+});
+
+// POST /api/auth/login/verify
+// Confirms the login OTP and — only on success — creates the session.
+router.post("/login/verify", async (req, res): Promise<void> => {
+  const parsed = z.object({ email: z.string().email(), code: z.string().min(4) }).safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Please provide your email and the login code" });
+    return;
+  }
+
+  const email = parsed.data.email.trim();
+  const [user] = await db.select().from(usersTable).where(eq(usersTable.email, email)).limit(1);
+  if (!user) {
+    res.status(404).json({ error: "No account found with that email address." });
+    return;
+  }
+
+  const valid = await consumeOtp(email, "login", parsed.data.code.trim());
+  if (!valid) {
+    res.status(400).json({ error: "That code is invalid or has expired. Please request a new one." });
     return;
   }
 
