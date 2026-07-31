@@ -67,7 +67,7 @@ router.get("/", async (req, res): Promise<void> => {
         ilike(vendorsTable.description, `%${term}%`)
       )!
     );
-    conditions.push(or(...termConditions)!);
+    conditions.push(and(...termConditions)!);
   }
 
   if (category) {
