@@ -60,6 +60,8 @@ export interface User {
 
 export interface AuthResponse {
   user: User;
+  /** Session token. The API also sets this as an httpOnly cookie, but clients (especially cross-origin web clients subject to third-party cookie blocking) should store this and send it as `Authorization: Bearer <token>` on subsequent requests. */
+  token: string;
 }
 
 export interface RequestPasswordResetInput {
