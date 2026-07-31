@@ -31,6 +31,7 @@ export * from './favoriteInput';
 export * from './healthStatus';
 export * from './homepageStats';
 export * from './listVendorsParams';
+export * from './loginPendingResponse';
 export * from './messageResponse';
 export * from './requestPasswordResetInput';
 export * from './resendEmailOtpInput';
