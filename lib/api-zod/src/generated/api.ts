@@ -63,6 +63,20 @@ export const LoginUserBody = zod.object({
 })
 
 export const LoginUserResponse = zod.object({
+  "requiresOtp": zod.boolean().describe('Always true — a login code was emailed and must be confirmed via /auth/login/verify.'),
+  "email": zod.string()
+})
+
+
+/**
+ * @summary Confirm the login code and log in
+ */
+export const ConfirmLoginOtpBody = zod.object({
+  "email": zod.string(),
+  "code": zod.string()
+})
+
+export const ConfirmLoginOtpResponse = zod.object({
   "user": zod.object({
   "id": zod.number(),
   "name": zod.string(),
@@ -146,7 +160,7 @@ export const VerifyEmailResponse = zod.object({
  */
 export const ResendEmailOtpBody = zod.object({
   "email": zod.string(),
-  "purpose": zod.enum(['signup', 'password_reset'])
+  "purpose": zod.enum(['signup', 'password_reset', 'login'])
 })
 
 export const ResendEmailOtpResponse = zod.object({
