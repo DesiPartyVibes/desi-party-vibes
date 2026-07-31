@@ -56,6 +56,7 @@ import type {
   VendorInput,
   VendorListResponse,
   VendorUpdate,
+  LoginPendingResponse,
   VerifyEmailInput,
   VerifyEmailResponse
 } from './api.schemas';
@@ -302,9 +303,9 @@ export const getLoginUserUrl = () => {
 /**
  * @summary Login
  */
-export const loginUser = async (userLoginInput: UserLoginInput, options?: RequestInit): Promise<AuthResponse> => {
+export const loginUser = async (userLoginInput: UserLoginInput, options?: RequestInit): Promise<LoginPendingResponse> => {
 
-  return customFetch<AuthResponse>(getLoginUserUrl(),
+  return customFetch<LoginPendingResponse>(getLoginUserUrl(),
   {
     ...options,
     method: 'POST',
@@ -360,6 +361,77 @@ export const useLoginUser = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getLoginUserMutationOptions(options));
+    }
+
+export const getConfirmLoginOtpUrl = () => {
+
+
+
+
+  return `/api/auth/login/verify`
+}
+
+/**
+ * @summary Confirm the login code and log in
+ */
+export const confirmLoginOtp = async (verifyEmailInput: VerifyEmailInput, options?: RequestInit): Promise<AuthResponse> => {
+
+  return customFetch<AuthResponse>(getConfirmLoginOtpUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      verifyEmailInput,)
+  }
+);}
+
+
+
+
+export const getConfirmLoginOtpMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirmLoginOtp>>, TError,{data: BodyType<VerifyEmailInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof confirmLoginOtp>>, TError,{data: BodyType<VerifyEmailInput>}, TContext> => {
+
+const mutationKey = ['confirmLoginOtp'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof confirmLoginOtp>>, {data: BodyType<VerifyEmailInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  confirmLoginOtp(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ConfirmLoginOtpMutationResult = NonNullable<Awaited<ReturnType<typeof confirmLoginOtp>>>
+    export type ConfirmLoginOtpMutationBody = BodyType<VerifyEmailInput>
+    export type ConfirmLoginOtpMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Confirm the login code and log in
+ */
+export const useConfirmLoginOtp = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirmLoginOtp>>, TError,{data: BodyType<VerifyEmailInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof confirmLoginOtp>>,
+        TError,
+        {data: BodyType<VerifyEmailInput>},
+        TContext
+      > => {
+      return useMutation(getConfirmLoginOtpMutationOptions(options));
     }
 
 export const getLogoutUserUrl = () => {
