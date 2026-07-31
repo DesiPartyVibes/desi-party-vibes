@@ -107,12 +107,16 @@ export function Navbar() {
                 <DropdownMenuItem asChild>
                   <Link href="/profile">Profile</Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/bookings">My Bookings</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/favorites">Favorites</Link>
-                </DropdownMenuItem>
+                {user.role !== "vendor" && (
+                  <>
+                    <DropdownMenuItem asChild>
+                      <Link href="/bookings">My Bookings</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/favorites">Favorites</Link>
+                    </DropdownMenuItem>
+                  </>
+                )}
                 {user.role === "vendor" && (
                   <DropdownMenuItem asChild>
                     <Link href="/vendor-dashboard">My Business</Link>
@@ -171,8 +175,12 @@ export function Navbar() {
             ) : (
               <>
                 <Link href="/profile" className="text-sm font-medium" onClick={() => setMobileMenuOpen(false)}>Profile</Link>
-                <Link href="/bookings" className="text-sm font-medium" onClick={() => setMobileMenuOpen(false)}>My Bookings</Link>
-                <Link href="/favorites" className="text-sm font-medium" onClick={() => setMobileMenuOpen(false)}>Favorites</Link>
+                {user?.role !== "vendor" && (
+                  <>
+                    <Link href="/bookings" className="text-sm font-medium" onClick={() => setMobileMenuOpen(false)}>My Bookings</Link>
+                    <Link href="/favorites" className="text-sm font-medium" onClick={() => setMobileMenuOpen(false)}>Favorites</Link>
+                  </>
+                )}
                 {user?.role === "vendor" && (
                   <Link href="/vendor-dashboard" className="text-sm font-medium" onClick={() => setMobileMenuOpen(false)}>My Business</Link>
                 )}
