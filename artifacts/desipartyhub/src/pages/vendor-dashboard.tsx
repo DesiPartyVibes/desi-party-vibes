@@ -35,9 +35,9 @@ const registerSchema = z.object({
   description: z.string().min(10, "Give customers a short description (10+ characters)"),
   priceMin: z.coerce.number().min(0),
   priceMax: z.coerce.number().min(0),
-  imageUrl: z.string().url("Enter a valid image URL"),
-  phone: z.string().optional(),
-  email: z.string().email().optional().or(z.literal("")),
+  imageUrl: z.string().url("Please add a photo for your listing"),
+  phone: z.string().trim().min(7, "Phone number is required"),
+  email: z.string().trim().min(1, "Email is required").email("Enter a valid email address"),
   website: z.string().url().optional().or(z.literal("")),
 });
 
@@ -54,13 +54,123 @@ const editSchema = z.object({
   description: z.string().min(1, "Description is required"),
   priceMin: z.coerce.number().min(0),
   priceMax: z.coerce.number().min(0),
-  imageUrl: z.string().url("Enter a valid image URL"),
-  phone: z.string().optional(),
-  email: z.string().email().optional().or(z.literal("")),
+  imageUrl: z.string().url("Please add a photo for your listing"),
+  phone: z.string().trim().min(7, "Phone number is required"),
+  email: z.string().trim().min(1, "Email is required").email("Enter a valid email address"),
   website: z.string().url().optional().or(z.literal("")),
 });
 
 type EditValues = z.infer<typeof editSchema>;
+
+// Resizes/compresses an uploaded image client-side and returns it as a JPEG
+// data URL, so vendors can upload a photo directly instead of hosting it
+// somewhere else and pasting a link. There's no object-storage service wired
+// up in this app, and the vendors.image_url column is a plain text field, so
+// a compressed data URL is the simplest path that needs no new backend work.
+async function processImageFile(file: File): Promise<string> {
+  const rawDataUrl: string = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(new Error("Couldn't read that file."));
+    reader.readAsDataURL(file);
+  });
+
+  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const el = new Image();
+    el.onload = () => resolve(el);
+    el.onerror = () => reject(new Error("Couldn't decode that image."));
+    el.src = rawDataUrl;
+  });
+
+  const maxDim = 1200;
+  const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(img.width * scale));
+  canvas.height = Math.max(1, Math.round(img.height * scale));
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Image processing isn't supported in this browser.");
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+  return canvas.toDataURL("image/jpeg", 0.82);
+}
+
+// Shared photo field for the register/edit forms: lets a vendor upload a
+// photo (resized+compressed client-side into the imageUrl field) or fall
+// back to pasting a URL directly.
+function PhotoField({ control }: { control: any }) {
+  const [mode, setMode] = useState<"upload" | "url">("upload");
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  return (
+    <FormField
+      control={control}
+      name="imageUrl"
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>Photo</FormLabel>
+          {mode === "upload" ? (
+            <div className="space-y-2">
+              <FormControl>
+                <Input
+                  type="file"
+                  accept="image/*"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    e.target.value = "";
+                    if (!file) return;
+                    setError(null);
+                    if (!file.type.startsWith("image/")) {
+                      setError("Please choose an image file.");
+                      return;
+                    }
+                    if (file.size > 8 * 1024 * 1024) {
+                      setError("Image is too large (max 8MB).");
+                      return;
+                    }
+                    setIsProcessing(true);
+                    try {
+                      field.onChange(await processImageFile(file));
+                    } catch (err: any) {
+                      setError(err?.message || "Couldn't process that image. Try a different file.");
+                    } finally {
+                      setIsProcessing(false);
+                    }
+                  }}
+                />
+              </FormControl>
+              {isProcessing && <p className="text-xs text-muted-foreground">Processing image...</p>}
+              {error && <p className="text-xs text-destructive">{error}</p>}
+              {field.value && !isProcessing && (
+                <img src={field.value} alt="Preview" className="h-24 w-24 rounded-md object-cover border" />
+              )}
+              <button
+                type="button"
+                className="text-xs text-muted-foreground underline underline-offset-2"
+                onClick={() => setMode("url")}
+              >
+                Or paste an image URL instead
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <FormControl>
+                <Input placeholder="https://..." {...field} />
+              </FormControl>
+              <button
+                type="button"
+                className="text-xs text-muted-foreground underline underline-offset-2"
+                onClick={() => setMode("upload")}
+              >
+                Or upload a photo instead
+              </button>
+            </div>
+          )}
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+}
 
 const bookingStatusLabels: Record<string, string> = {
   pending: "New Request",
@@ -352,13 +462,7 @@ export default function VendorDashboard() {
                 )}
               />
             </div>
-            <FormField
-              control={registerForm.control}
-              name="imageUrl"
-              render={({ field }) => (
-                <FormItem><FormLabel>Image URL</FormLabel><FormControl><Input placeholder="https://..." {...field} /></FormControl><FormMessage /></FormItem>
-              )}
-            />
+            <PhotoField control={registerForm.control} />
             <FormField
               control={registerForm.control}
               name="description"
@@ -442,13 +546,7 @@ export default function VendorDashboard() {
                 )}
               />
             </div>
-            <FormField
-              control={editForm.control}
-              name="imageUrl"
-              render={({ field }) => (
-                <FormItem><FormLabel>Image URL</FormLabel><FormControl><Input placeholder="https://..." {...field} /></FormControl><FormMessage /></FormItem>
-              )}
-            />
+            <PhotoField control={editForm.control} />
             <FormField
               control={editForm.control}
               name="description"

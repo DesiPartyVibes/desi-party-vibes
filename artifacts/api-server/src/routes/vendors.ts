@@ -179,6 +179,15 @@ const vendorInputSchema = z.object({
   isFeatured: z.boolean().optional(),
 });
 
+// A vendor self-registering their own listing must provide real contact
+// details (mirrors the required fields on the Register Your Business form).
+// Admin-created listings go through vendorInputSchema above and keep
+// phone/email optional.
+const vendorSelfInputSchema = vendorInputSchema.extend({
+  phone: z.string().trim().min(7, "Phone number is required"),
+  email: z.string().trim().min(1, "Email is required").email("Enter a valid email address"),
+});
+
 router.post("/", async (req, res): Promise<void> => {
   const user = await getSessionUser(req);
   if (!user || (user.role !== "admin" && user.role !== "vendor")) {
@@ -190,9 +199,10 @@ router.post("/", async (req, res): Promise<void> => {
     return;
   }
 
-  const parsed = vendorInputSchema.safeParse(req.body);
+  const schema = user.role === "vendor" ? vendorSelfInputSchema : vendorInputSchema;
+  const parsed = schema.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: "Invalid input" });
+    res.status(400).json({ error: parsed.error.issues[0]?.message || "Invalid input" });
     return;
   }
 
@@ -242,8 +252,10 @@ const vendorSelfUpdateSchema = z.object({
   priceMax: z.number().int().optional(),
   imageUrl: z.string().url().optional(),
   gallery: z.array(z.string()).optional(),
-  phone: z.string().optional(),
-  email: z.string().optional(),
+  // Phone/email stay required (not just required-if-present) for a vendor's
+  // own listing, matching the Edit Your Listing form and self-registration.
+  phone: z.string().trim().min(7, "Phone number is required"),
+  email: z.string().trim().min(1, "Email is required").email("Enter a valid email address"),
   website: z.string().optional(),
 });
 
@@ -288,7 +300,7 @@ router.patch("/:id", async (req, res): Promise<void> => {
   } else {
     const parsed = vendorSelfUpdateSchema.safeParse(req.body);
     if (!parsed.success) {
-      res.status(400).json({ error: "Invalid input" });
+      res.status(400).json({ error: parsed.error.issues[0]?.message || "Invalid input" });
       return;
     }
     updateData = parsed.data;
