@@ -6,7 +6,7 @@ import { pgTable, serial, text, timestamp, boolean } from "drizzle-orm/pg-core";
 export const otpCodesTable = pgTable("otp_codes", {
   id: serial("id").primaryKey(),
   identifier: text("identifier").notNull(),
-  purpose: text("purpose", { enum: ["signup", "password_reset"] }).notNull(),
+  purpose: text("purpose", { enum: ["signup", "password_reset", "login"] }).notNull(),
   code: text("code").notNull(),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   used: boolean("used").notNull().default(false),

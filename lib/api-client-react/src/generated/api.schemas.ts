@@ -64,6 +64,12 @@ export interface AuthResponse {
   token: string;
 }
 
+export interface LoginPendingResponse {
+  /** Always true — a login code was emailed and must be confirmed via /auth/login/verify. */
+  requiresOtp: boolean;
+  email: string;
+}
+
 export interface RequestPasswordResetInput {
   email: string;
 }
@@ -89,6 +95,7 @@ export type ResendEmailOtpInputPurpose = typeof ResendEmailOtpInputPurpose[keyof
 export const ResendEmailOtpInputPurpose = {
   signup: 'signup',
   password_reset: 'password_reset',
+  login: 'login',
 } as const;
 
 export interface ResendEmailOtpInput {

@@ -12,4 +12,5 @@ export type ResendEmailOtpInputPurpose = typeof ResendEmailOtpInputPurpose[keyof
 export const ResendEmailOtpInputPurpose = {
   signup: 'signup',
   password_reset: 'password_reset',
+  login: 'login',
 } as const;

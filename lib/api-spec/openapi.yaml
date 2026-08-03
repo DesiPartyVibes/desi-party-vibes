@@ -88,6 +88,10 @@ paths:
       operationId: loginUser
       tags: [users]
       summary: Login
+      description: >-
+        Checks the password and, on success, emails a one-time login code
+        instead of creating a session. Call /auth/login/verify with that code
+        to actually get a session.
       requestBody:
         required: true
         content:
@@ -96,7 +100,26 @@ paths:
               $ref: "#/components/schemas/UserLoginInput"
       responses:
         "200":
-          description: Logged in
+          description: Credentials valid — a login code was emailed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginPendingResponse"
+
+  /auth/login/verify:
+    post:
+      operationId: confirmLoginOtp
+      tags: [users]
+      summary: Confirm the login code and log in
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerifyEmailInput"
+      responses:
+        "200":
+          description: Verified and logged in
           content:
             application/json:
               schema:
@@ -995,6 +1018,16 @@ components:
             third-party cookie blocking) should store this and send it as
             `Authorization: Bearer <token>` on subsequent requests.
 
+    LoginPendingResponse:
+      type: object
+      required: [requiresOtp, email]
+      properties:
+        requiresOtp:
+          type: boolean
+          description: Always true — a login code was emailed and must be confirmed via /auth/login/verify.
+        email:
+          type: string
+
     RequestPasswordResetInput:
       type: object
       required: [email]
@@ -1037,7 +1070,7 @@ components:
           type: string
         purpose:
           type: string
-          enum: [signup, password_reset]
+          enum: [signup, password_reset, login]
 
     User:
       type: object
