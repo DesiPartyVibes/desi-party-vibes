@@ -3,6 +3,7 @@ import { useGetCurrentUser, useLogoutUser } from "@workspace/api-client-react";
 import { setStoredToken } from "@/lib/auth-token";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -68,6 +69,10 @@ export function Navbar() {
         </div>
 
         <div className="hidden md:flex items-center gap-4">
+          {isLoading ? (
+            <Skeleton className="h-8 w-8 rounded-full" />
+          ) : (
+            <>
           {!user && location !== "/login" && location !== "/register" && location !== "/forgot-password" && (
             <>
               <Button variant="ghost" asChild>
@@ -102,12 +107,16 @@ export function Navbar() {
                 <DropdownMenuItem asChild>
                   <Link href="/profile">Profile</Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/bookings">My Bookings</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/favorites">Favorites</Link>
-                </DropdownMenuItem>
+                {user.role !== "vendor" && (
+                  <>
+                    <DropdownMenuItem asChild>
+                      <Link href="/bookings">My Bookings</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/favorites">Favorites</Link>
+                    </DropdownMenuItem>
+                  </>
+                )}
                 {user.role === "vendor" && (
                   <DropdownMenuItem asChild>
                     <Link href="/vendor-dashboard">My Business</Link>
@@ -122,6 +131,8 @@ export function Navbar() {
                 <DropdownMenuItem onClick={handleLogout}>Log out</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+          )}
+            </>
           )}
         </div>
 
@@ -150,7 +161,9 @@ export function Navbar() {
             ))}
           </nav>
           <div className="border-t pt-4 flex flex-col gap-4">
-            {!user && location !== "/login" && location !== "/register" ? (
+            {isLoading ? (
+              <Skeleton className="h-9 w-full" />
+            ) : !user && location !== "/login" && location !== "/register" ? (
               <>
                 <Button variant="outline" asChild className="w-full justify-start">
                   <Link href="/login" onClick={() => setMobileMenuOpen(false)}>Log in</Link>
@@ -162,8 +175,12 @@ export function Navbar() {
             ) : (
               <>
                 <Link href="/profile" className="text-sm font-medium" onClick={() => setMobileMenuOpen(false)}>Profile</Link>
-                <Link href="/bookings" className="text-sm font-medium" onClick={() => setMobileMenuOpen(false)}>My Bookings</Link>
-                <Link href="/favorites" className="text-sm font-medium" onClick={() => setMobileMenuOpen(false)}>Favorites</Link>
+                {user?.role !== "vendor" && (
+                  <>
+                    <Link href="/bookings" className="text-sm font-medium" onClick={() => setMobileMenuOpen(false)}>My Bookings</Link>
+                    <Link href="/favorites" className="text-sm font-medium" onClick={() => setMobileMenuOpen(false)}>Favorites</Link>
+                  </>
+                )}
                 {user?.role === "vendor" && (
                   <Link href="/vendor-dashboard" className="text-sm font-medium" onClick={() => setMobileMenuOpen(false)}>My Business</Link>
                 )}
