@@ -27,6 +27,8 @@ export * from './checklistItemInput';
 export * from './checklistItemUpdate';
 export * from './cityCount';
 export * from './confirmPasswordResetInput';
+export * from './contactSupportInput';
+export * from './contactSupportResponse';
 export * from './favoriteInput';
 export * from './healthStatus';
 export * from './homepageStats';
