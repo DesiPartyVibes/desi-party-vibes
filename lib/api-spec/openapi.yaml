@@ -27,6 +27,8 @@ tags:
     description: Budget planner operations
   - name: admin
     description: Admin operations
+  - name: support
+    description: Support operations
   - name: stats
     description: Dashboard stats
 
@@ -464,6 +466,26 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/VendorClaim"
+
+  # SUPPORT
+  /support/contact:
+    post:
+      operationId: contactSupport
+      tags: [support]
+      summary: Send a support message from the current user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ContactSupportInput"
+      responses:
+        "200":
+          description: Message sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContactSupportResponse"
 
   # BOOKINGS
   /bookings:
@@ -973,6 +995,22 @@ components:
         message:
           type: string
       required: [message]
+
+    ContactSupportInput:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+          minLength: 10
+          maxLength: 2000
+
+    ContactSupportResponse:
+      type: object
+      required: [success]
+      properties:
+        success:
+          type: boolean
 
     # AUTH
     UserRegisterInput:
