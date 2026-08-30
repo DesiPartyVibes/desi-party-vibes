@@ -103,6 +103,14 @@ export interface ResendEmailOtpInput {
   purpose: ResendEmailOtpInputPurpose;
 }
 
+export interface ContactSupportInput {
+  message: string;
+}
+
+export interface ContactSupportResponse {
+  success: boolean;
+}
+
 export interface Category {
   id: number;
   name: string;

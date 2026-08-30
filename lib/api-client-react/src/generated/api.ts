@@ -44,6 +44,8 @@ import type {
   MessageResponse,
   RequestPasswordResetInput,
   ResendEmailOtpInput,
+  ContactSupportInput,
+  ContactSupportResponse,
   Review,
   ReviewInput,
   User,
@@ -863,6 +865,77 @@ export const useResendEmailOtp = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getResendEmailOtpMutationOptions(options));
+    }
+
+export const getContactSupportUrl = () => {
+
+
+
+
+  return `/api/support/contact`
+}
+
+/**
+ * @summary Send a support message from the current user
+ */
+export const contactSupport = async (contactSupportInput: ContactSupportInput, options?: RequestInit): Promise<ContactSupportResponse> => {
+
+  return customFetch<ContactSupportResponse>(getContactSupportUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      contactSupportInput,)
+  }
+);}
+
+
+
+
+export const getContactSupportMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof contactSupport>>, TError,{data: BodyType<ContactSupportInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof contactSupport>>, TError,{data: BodyType<ContactSupportInput>}, TContext> => {
+
+const mutationKey = ['contactSupport'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof contactSupport>>, {data: BodyType<ContactSupportInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  contactSupport(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ContactSupportMutationResult = NonNullable<Awaited<ReturnType<typeof contactSupport>>>
+    export type ContactSupportMutationBody = BodyType<ContactSupportInput>
+    export type ContactSupportMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Send a support message from the current user
+ */
+export const useContactSupport = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof contactSupport>>, TError,{data: BodyType<ContactSupportInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof contactSupport>>,
+        TError,
+        {data: BodyType<ContactSupportInput>},
+        TContext
+      > => {
+      return useMutation(getContactSupportMutationOptions(options));
     }
 
 export const getListCategoriesUrl = () => {
