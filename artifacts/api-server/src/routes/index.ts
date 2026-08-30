@@ -11,6 +11,7 @@ import budgetRouter from "./budget";
 import statsRouter from "./stats";
 import adminRouter from "./admin";
 import vendorClaimsRouter from "./vendor-claims";
+import supportRouter from "./support";
 
 const router: IRouter = Router();
 
@@ -26,5 +27,6 @@ router.use("/budget", budgetRouter);
 router.use("/stats", statsRouter);
 router.use("/admin", adminRouter);
 router.use("/vendor-claims", vendorClaimsRouter);
+router.use("/support", supportRouter);
 
 export default router;
