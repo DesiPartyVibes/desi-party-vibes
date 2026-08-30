@@ -169,6 +169,18 @@ export const ResendEmailOtpResponse = zod.object({
 
 
 /**
+ * @summary Send a support message from the current user
+ */
+export const ContactSupportBody = zod.object({
+  "message": zod.string().min(10).max(2000)
+})
+
+export const ContactSupportResponse = zod.object({
+  "success": zod.boolean()
+})
+
+
+/**
  * @summary List all categories
  */
 export const ListCategoriesResponseItem = zod.object({
