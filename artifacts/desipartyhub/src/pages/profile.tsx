@@ -1,11 +1,98 @@
+import { useState } from "react";
 import { useLocation } from "wouter";
-import { useGetCurrentUser } from "@workspace/api-client-react";
+import { useGetCurrentUser, useContactSupport } from "@workspace/api-client-react";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
+import { Loader2 } from "lucide-react";
+
+function ContactSupportDialog() {
+  const { toast } = useToast();
+  const contactSupport = useContactSupport();
+  const [open, setOpen] = useState(false);
+  const [message, setMessage] = useState("");
+
+  const handleSend = () => {
+    if (message.trim().length < 10) {
+      toast({
+        variant: "destructive",
+        title: "Add a bit more detail",
+        description: "Please describe your issue in at least 10 characters.",
+      });
+      return;
+    }
+
+    contactSupport.mutate(
+      { data: { message: message.trim() } },
+      {
+        onSuccess: () => {
+          toast({ description: "Your message has been sent. We'll get back to you soon." });
+          setMessage("");
+          setOpen(false);
+        },
+        onError: (err) => {
+          toast({
+            variant: "destructive",
+            title: "Couldn't send your message",
+            description: err?.data?.error || "Please try again in a moment.",
+          });
+        },
+      }
+    );
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline">Contact Support</Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Contact Support</DialogTitle>
+          <DialogDescription>
+            Let us know what you need help with — updating your profile, changing your password, or anything
+            else. We'll reply to the email on your account.
+          </DialogDescription>
+        </DialogHeader>
+        <Textarea
+          placeholder="Describe your issue or request..."
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          rows={5}
+        />
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)} disabled={contactSupport.isPending}>
+            Cancel
+          </Button>
+          <Button onClick={handleSend} disabled={contactSupport.isPending}>
+            {contactSupport.isPending ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Sending...
+              </>
+            ) : (
+              "Send message"
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 export default function Profile() {
   const [, setLocation] = useLocation();
@@ -20,7 +107,7 @@ export default function Profile() {
     <Layout>
       <div className="container mx-auto px-4 py-12 max-w-3xl">
         <h1 className="font-serif text-3xl font-bold mb-8">My Profile</h1>
-        
+
         {isLoading ? (
           <Card>
             <CardContent className="p-6">
@@ -76,7 +163,7 @@ export default function Profile() {
                   Contact support to update your profile information or change your password.
                 </p>
                 <div className="flex gap-4">
-                                <Button variant="outline" onClick={() => { window.location.href = "mailto:raguramdhanunjan@gmail.com?subject=DesiPartyVibes%20Account%20Support"; }}>Contact Support</Button>
+                  <ContactSupportDialog />
                 </div>
               </div>
             </CardContent>
