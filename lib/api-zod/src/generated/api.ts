@@ -160,7 +160,7 @@ export const VerifyEmailResponse = zod.object({
  */
 export const ResendEmailOtpBody = zod.object({
   "email": zod.string(),
-  "purpose": zod.enum(['signup', 'password_reset', 'login'])
+  "purpose": zod.enum(['signup', 'password_reset', 'login', 'profile_update'])
 })
 
 export const ResendEmailOtpResponse = zod.object({
@@ -177,6 +177,40 @@ export const ContactSupportBody = zod.object({
 
 export const ContactSupportResponse = zod.object({
   "success": zod.boolean()
+})
+
+
+/**
+ * @summary Confirm the profile-update code and receive a short-lived edit grant
+ */
+export const VerifyProfileOtpBody = zod.object({
+  "code": zod.string()
+})
+
+export const VerifyProfileOtpResponse = zod.object({
+  "editGrant": zod.string()
+})
+
+
+/**
+ * @summary Update name, email, phone, address, password, and/or avatar (requires a valid edit grant)
+ */
+export const UpdateProfileBody = zod.object({
+  "editGrant": zod.string(),
+  "name": zod.string().optional(),
+  "email": zod.string().optional(),
+  "phone": zod.string().optional(),
+  "address": zod.string().optional(),
+  "newPassword": zod.string().optional(),
+  "avatarUrl": zod.string().optional()
+})
+
+
+/**
+ * @summary Update the current user's light/dark/system theme preference
+ */
+export const UpdateThemeBody = zod.object({
+  "theme": zod.enum(['light', 'dark', 'system'])
 })
 
 
