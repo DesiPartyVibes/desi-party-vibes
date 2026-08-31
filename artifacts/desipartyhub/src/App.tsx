@@ -1,5 +1,6 @@
 import { Switch, Route, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ApiError } from "@workspace/api-client-react";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme/theme-provider";
@@ -21,7 +22,23 @@ import VendorDashboard from "@/pages/vendor-dashboard";
 import ForgotPassword from "@/pages/forgot-password";
 import VerifyEmail from "@/pages/verify-email";
 
-const queryClient = new QueryClient();
+// A 401/403 means "not logged in" / "not allowed" — retrying won't change
+// that, it just delays the UI from settling (e.g. showing Login/Sign up
+// after logout took ~10s because the default 3-retry exponential backoff
+// kept useGetCurrentUser's query in a loading state). Other failures (flaky
+// network, 5xx) still get a couple of retries.
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: (failureCount, error) => {
+        if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
+          return false;
+        }
+        return failureCount < 2;
+      },
+    },
+  },
+});
 
 function Router() {
   return (

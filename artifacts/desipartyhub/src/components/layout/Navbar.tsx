@@ -41,7 +41,7 @@ export function Navbar() {
     { href: "/categories", label: "Categories" },
   ];
 
-  if (user) {
+  if (user && user.role !== "vendor") {
     navLinks.push({ href: "/checklist", label: "Checklist" });
     navLinks.push({ href: "/budget", label: "Budget" });
   }
