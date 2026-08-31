@@ -6,7 +6,7 @@ import { z } from "zod";
 import crypto from "crypto";
 import { sendEmail } from "../lib/email.js";
 import { logger } from "../lib/logger.js";
-import { extractSessionToken } from "../lib/auth.js";
+import { extractSessionToken, getSessionUser } from "../lib/auth.js";
 
 const router = Router();
 
@@ -16,6 +16,37 @@ function hashPassword(password: string): string {
 
 function generateToken(): string {
   return crypto.randomBytes(32).toString("hex");
+}
+
+// Short-lived, stateless "proof of OTP" grant handed back once a user
+// confirms a profile-update OTP. The client must present it with the
+// follow-up PATCH /profile or PATCH /theme-adjacent update call, so that
+// endpoint doesn't have to be re-protected by a second OTP entry. It's just
+// an HMAC over (userId, expiry) — no DB row needed, and it can't be replayed
+// past its 10-minute window or reused by a different account.
+const EDIT_GRANT_SECRET = process.env.EDIT_GRANT_SECRET || "desipartyhub_profile_edit_grant_secret";
+const EDIT_GRANT_TTL_MS = 10 * 60 * 1000; // 10 minutes
+
+function generateEditGrant(userId: number): string {
+  const expiresAt = Date.now() + EDIT_GRANT_TTL_MS;
+  const payload = `${userId}.${expiresAt}`;
+  const sig = crypto.createHmac("sha256", EDIT_GRANT_SECRET).update(payload).digest("hex");
+  return Buffer.from(`${payload}.${sig}`).toString("base64url");
+}
+
+function verifyEditGrant(userId: number, token: string | undefined): boolean {
+  if (!token) return false;
+  try {
+    const decoded = Buffer.from(token, "base64url").toString();
+    const [uidStr, expiresAtStr, sig] = decoded.split(".");
+    if (!uidStr || !expiresAtStr || !sig) return false;
+    if (Number(uidStr) !== userId) return false;
+    if (Date.now() > Number(expiresAtStr)) return false;
+    const expectedSig = crypto.createHmac("sha256", EDIT_GRANT_SECRET).update(`${uidStr}.${expiresAtStr}`).digest("hex");
+    return crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expectedSig));
+  } catch {
+    return false;
+  }
 }
 
 // Normalise phone: strip non-digits, prepend +1 if no country code
@@ -32,7 +63,7 @@ function generateOtp(): string {
   return crypto.randomInt(100000, 1000000).toString();
 }
 
-async function issueOtp(identifier: string, purpose: "signup" | "password_reset" | "login"): Promise<string> {
+async function issueOtp(identifier: string, purpose: "signup" | "password_reset" | "login" | "profile_update"): Promise<string> {
   const code = generateOtp();
   await db.insert(otpCodesTable).values({
     identifier,
@@ -45,7 +76,7 @@ async function issueOtp(identifier: string, purpose: "signup" | "password_reset"
 
 async function consumeOtp(
   identifier: string,
-  purpose: "signup" | "password_reset" | "login",
+  purpose: "signup" | "password_reset" | "login" | "profile_update",
   code: string
 ): Promise<boolean> {
   const [row] = await db
@@ -156,6 +187,9 @@ router.post("/register", async (req, res): Promise<void> => {
       emailVerified: user.emailVerified,
       isRejected: !!user.rejectedAt,
       avatarUrl: user.avatarUrl,
+      phone: user.phone,
+      address: user.address,
+      themePreference: user.themePreference,
       createdAt: user.createdAt.toISOString(),
     },
   });
@@ -209,6 +243,9 @@ router.post("/register/verify", async (req, res): Promise<void> => {
       emailVerified: true,
       isRejected: !!user.rejectedAt,
       avatarUrl: user.avatarUrl,
+      phone: user.phone,
+      address: user.address,
+      themePreference: user.themePreference,
       createdAt: user.createdAt.toISOString(),
     },
   });
@@ -311,7 +348,7 @@ router.post("/resend-email-otp", async (req, res): Promise<void> => {
   const parsed = z
     .object({
       email: z.string().email(),
-      purpose: z.enum(["signup", "password_reset", "login"]),
+      purpose: z.enum(["signup", "password_reset", "login", "profile_update"]),
     })
     .safeParse(req.body);
   if (!parsed.success) {
@@ -337,12 +374,16 @@ router.post("/resend-email-otp", async (req, res): Promise<void> => {
       ? "Verify your email for DesiPartyVibes"
       : parsed.data.purpose === "login"
       ? "Your DesiPartyVibes login code"
+      : parsed.data.purpose === "profile_update"
+      ? "Your DesiPartyVibes account verification code"
       : "Your DesiPartyVibes password reset code";
   const intro =
     parsed.data.purpose === "signup"
       ? "Your verification code is:"
       : parsed.data.purpose === "login"
       ? "Your login code is:"
+      : parsed.data.purpose === "profile_update"
+      ? "Your verification code is:"
       : "Your password reset code is:";
 
   sendEmail(email, subject, otpEmailHtml(user.firstName || user.name, intro, code)).catch((err) =>
@@ -431,6 +472,9 @@ router.post("/login/verify", async (req, res): Promise<void> => {
       emailVerified: user.emailVerified,
       isRejected: !!user.rejectedAt,
       avatarUrl: user.avatarUrl,
+      phone: user.phone,
+      address: user.address,
+      themePreference: user.themePreference,
       createdAt: user.createdAt.toISOString(),
     },
   });
@@ -473,7 +517,176 @@ router.get("/me", async (req, res): Promise<void> => {
     emailVerified: user.emailVerified,
     isRejected: !!user.rejectedAt,
     avatarUrl: user.avatarUrl,
+    phone: user.phone,
+    address: user.address,
+    themePreference: user.themePreference,
     createdAt: user.createdAt.toISOString(),
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────
+// Profile self-service: name / email / phone / address / password / avatar
+// can all be changed from the My Profile page, but only after the user
+// proves it's really them by entering a one-time code sent to their current
+// email. request-otp sends that code; verify-otp checks it and hands back a
+// short-lived edit grant; PATCH /profile applies whichever fields were
+// submitted, gated on that grant. Theme preference is intentionally NOT
+// gated behind OTP — it's a display setting, not account data, so it has
+// its own unprotected PATCH /theme endpoint below.
+// ─────────────────────────────────────────────────────────────────────────
+
+// POST /api/auth/profile/request-otp
+router.post("/profile/request-otp", async (req, res): Promise<void> => {
+  const user = await getSessionUser(req);
+  if (!user) {
+    res.status(401).json({ error: "Not authenticated" });
+    return;
+  }
+
+  try {
+    const code = await issueOtp(user.email, "profile_update");
+    await sendEmail(
+      user.email,
+      "Your DesiPartyVibes account verification code",
+      otpEmailHtml(user.firstName || user.name, "Use this code to confirm it's you before making changes to your account:", code)
+    );
+  } catch (err) {
+    logger.error({ err, userId: user.id }, "Failed to send profile-update verification email");
+    res.status(500).json({ error: "Couldn't send a verification code right now. Please try again." });
+    return;
+  }
+
+  res.json({ message: "A verification code has been sent to your email." });
+});
+
+// POST /api/auth/profile/verify-otp
+router.post("/profile/verify-otp", async (req, res): Promise<void> => {
+  const user = await getSessionUser(req);
+  if (!user) {
+    res.status(401).json({ error: "Not authenticated" });
+    return;
+  }
+
+  const parsed = z.object({ code: z.string().min(4) }).safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Please provide the verification code" });
+    return;
+  }
+
+  const valid = await consumeOtp(user.email, "profile_update", parsed.data.code.trim());
+  if (!valid) {
+    res.status(400).json({ error: "That code is invalid or has expired. Please request a new one." });
+    return;
+  }
+
+  res.json({ editGrant: generateEditGrant(user.id) });
+});
+
+const updateProfileSchema = z.object({
+  editGrant: z.string().min(1),
+  name: z.string().min(2).optional(),
+  email: z.string().email().optional(),
+  phone: z.string().min(5).optional(),
+  address: z.string().optional(),
+  newPassword: z.string().min(8).optional(),
+  avatarUrl: z.string().optional(),
+});
+
+// PATCH /api/auth/profile
+router.patch("/profile", async (req, res): Promise<void> => {
+  const user = await getSessionUser(req);
+  if (!user) {
+    res.status(401).json({ error: "Not authenticated" });
+    return;
+  }
+
+  const parsed = updateProfileSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.issues[0]?.message || "Invalid input" });
+    return;
+  }
+
+  if (!verifyEditGrant(user.id, parsed.data.editGrant)) {
+    res.status(401).json({ error: "Please verify a fresh code before making changes." });
+    return;
+  }
+
+  const { name, email, phone, address, newPassword, avatarUrl } = parsed.data;
+
+  if (email && email !== user.email) {
+    const existing = await db.select().from(usersTable).where(eq(usersTable.email, email)).limit(1);
+    if (existing.length > 0) {
+      res.status(400).json({ error: "That email address is already in use." });
+      return;
+    }
+  }
+
+  const updates: Partial<typeof usersTable.$inferInsert> = {};
+  if (name !== undefined) updates.name = name;
+  if (email !== undefined) updates.email = email;
+  if (phone !== undefined) updates.phone = normalisePhone(phone);
+  if (address !== undefined) updates.address = address;
+  if (avatarUrl !== undefined) updates.avatarUrl = avatarUrl;
+  if (newPassword) updates.passwordHash = hashPassword(newPassword);
+
+  if (Object.keys(updates).length === 0) {
+    res.status(400).json({ error: "No changes were submitted." });
+    return;
+  }
+
+  const [updated] = await db.update(usersTable).set(updates).where(eq(usersTable.id, user.id)).returning();
+
+  res.json({
+    id: updated.id,
+    name: updated.name,
+    email: updated.email,
+    role: updated.role,
+    isVerified: updated.isVerified,
+    emailVerified: updated.emailVerified,
+    isRejected: !!updated.rejectedAt,
+    avatarUrl: updated.avatarUrl,
+    phone: updated.phone,
+    address: updated.address,
+    themePreference: updated.themePreference,
+    createdAt: updated.createdAt.toISOString(),
+  });
+});
+
+// PATCH /api/auth/theme
+// Deliberately not OTP-gated — this is a display preference, not sensitive
+// account data, so it should switch instantly.
+router.patch("/theme", async (req, res): Promise<void> => {
+  const user = await getSessionUser(req);
+  if (!user) {
+    res.status(401).json({ error: "Not authenticated" });
+    return;
+  }
+
+  const parsed = z.object({ theme: z.enum(["light", "dark", "system"]) }).safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid theme value" });
+    return;
+  }
+
+  const [updated] = await db
+    .update(usersTable)
+    .set({ themePreference: parsed.data.theme })
+    .where(eq(usersTable.id, user.id))
+    .returning();
+
+  res.json({
+    id: updated.id,
+    name: updated.name,
+    email: updated.email,
+    role: updated.role,
+    isVerified: updated.isVerified,
+    emailVerified: updated.emailVerified,
+    isRejected: !!updated.rejectedAt,
+    avatarUrl: updated.avatarUrl,
+    phone: updated.phone,
+    address: updated.address,
+    themePreference: updated.themePreference,
+    createdAt: updated.createdAt.toISOString(),
   });
 });
 
