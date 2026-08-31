@@ -45,6 +45,15 @@ export const UserRole = {
   admin: 'admin',
 } as const;
 
+export type UserThemePreference = typeof UserThemePreference[keyof typeof UserThemePreference];
+
+
+export const UserThemePreference = {
+  light: 'light',
+  dark: 'dark',
+  system: 'system',
+} as const;
+
 export interface User {
   id: number;
   name: string;
@@ -55,6 +64,11 @@ export interface User {
   isRejected: boolean;
   /** @nullable */
   avatarUrl?: string | null;
+  /** @nullable */
+  phone?: string | null;
+  /** @nullable */
+  address?: string | null;
+  themePreference?: UserThemePreference;
   createdAt: string;
 }
 
@@ -96,6 +110,7 @@ export const ResendEmailOtpInputPurpose = {
   signup: 'signup',
   password_reset: 'password_reset',
   login: 'login',
+  profile_update: 'profile_update',
 } as const;
 
 export interface ResendEmailOtpInput {
@@ -109,6 +124,39 @@ export interface ContactSupportInput {
 
 export interface ContactSupportResponse {
   success: boolean;
+}
+
+export interface VerifyProfileOtpInput {
+  code: string;
+}
+
+export interface VerifyProfileOtpResponse {
+  /** Short-lived (10 min) proof-of-verification token to include with PATCH /auth/profile */
+  editGrant: string;
+}
+
+export interface UpdateProfileInput {
+  editGrant: string;
+  name?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  newPassword?: string;
+  /** Data URL of a client-side compressed image */
+  avatarUrl?: string;
+}
+
+export type UpdateThemeInputTheme = typeof UpdateThemeInputTheme[keyof typeof UpdateThemeInputTheme];
+
+
+export const UpdateThemeInputTheme = {
+  light: 'light',
+  dark: 'dark',
+  system: 'system',
+} as const;
+
+export interface UpdateThemeInput {
+  theme: UpdateThemeInputTheme;
 }
 
 export interface Category {

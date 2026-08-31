@@ -46,6 +46,10 @@ import type {
   ResendEmailOtpInput,
   ContactSupportInput,
   ContactSupportResponse,
+  VerifyProfileOtpInput,
+  VerifyProfileOtpResponse,
+  UpdateProfileInput,
+  UpdateThemeInput,
   Review,
   ReviewInput,
   User,
@@ -936,6 +940,285 @@ export const useContactSupport = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getContactSupportMutationOptions(options));
+    }
+
+export const getRequestProfileOtpUrl = () => {
+
+
+
+
+  return `/api/auth/profile/request-otp`
+}
+
+/**
+ * @summary Send a verification code to the current user's email before allowing profile changes
+ */
+export const requestProfileOtp = async (options?: RequestInit): Promise<MessageResponse> => {
+
+  return customFetch<MessageResponse>(getRequestProfileOtpUrl(),
+  {
+    ...options,
+    method: 'POST',
+  }
+);}
+
+
+
+
+export const getRequestProfileOtpMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestProfileOtp>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof requestProfileOtp>>, TError,void, TContext> => {
+
+const mutationKey = ['requestProfileOtp'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof requestProfileOtp>>, void> = () => {
+          return  requestProfileOtp(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RequestProfileOtpMutationResult = NonNullable<Awaited<ReturnType<typeof requestProfileOtp>>>
+
+    export type RequestProfileOtpMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Send a verification code to the current user's email before allowing profile changes
+ */
+export const useRequestProfileOtp = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestProfileOtp>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof requestProfileOtp>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getRequestProfileOtpMutationOptions(options));
+    }
+
+export const getVerifyProfileOtpUrl = () => {
+
+
+
+
+  return `/api/auth/profile/verify-otp`
+}
+
+/**
+ * @summary Confirm the profile-update code and receive a short-lived edit grant
+ */
+export const verifyProfileOtp = async (verifyProfileOtpInput: VerifyProfileOtpInput, options?: RequestInit): Promise<VerifyProfileOtpResponse> => {
+
+  return customFetch<VerifyProfileOtpResponse>(getVerifyProfileOtpUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      verifyProfileOtpInput,)
+  }
+);}
+
+
+
+
+export const getVerifyProfileOtpMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyProfileOtp>>, TError,{data: BodyType<VerifyProfileOtpInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof verifyProfileOtp>>, TError,{data: BodyType<VerifyProfileOtpInput>}, TContext> => {
+
+const mutationKey = ['verifyProfileOtp'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof verifyProfileOtp>>, {data: BodyType<VerifyProfileOtpInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  verifyProfileOtp(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type VerifyProfileOtpMutationResult = NonNullable<Awaited<ReturnType<typeof verifyProfileOtp>>>
+    export type VerifyProfileOtpMutationBody = BodyType<VerifyProfileOtpInput>
+    export type VerifyProfileOtpMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Confirm the profile-update code and receive a short-lived edit grant
+ */
+export const useVerifyProfileOtp = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyProfileOtp>>, TError,{data: BodyType<VerifyProfileOtpInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof verifyProfileOtp>>,
+        TError,
+        {data: BodyType<VerifyProfileOtpInput>},
+        TContext
+      > => {
+      return useMutation(getVerifyProfileOtpMutationOptions(options));
+    }
+
+export const getUpdateProfileUrl = () => {
+
+
+
+
+  return `/api/auth/profile`
+}
+
+/**
+ * @summary Update name, email, phone, address, password, and/or avatar (requires a valid edit grant)
+ */
+export const updateProfile = async (updateProfileInput: UpdateProfileInput, options?: RequestInit): Promise<User> => {
+
+  return customFetch<User>(getUpdateProfileUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updateProfileInput,)
+  }
+);}
+
+
+
+
+export const getUpdateProfileMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateProfile>>, TError,{data: BodyType<UpdateProfileInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateProfile>>, TError,{data: BodyType<UpdateProfileInput>}, TContext> => {
+
+const mutationKey = ['updateProfile'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateProfile>>, {data: BodyType<UpdateProfileInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateProfile(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateProfileMutationResult = NonNullable<Awaited<ReturnType<typeof updateProfile>>>
+    export type UpdateProfileMutationBody = BodyType<UpdateProfileInput>
+    export type UpdateProfileMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Update name, email, phone, address, password, and/or avatar (requires a valid edit grant)
+ */
+export const useUpdateProfile = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateProfile>>, TError,{data: BodyType<UpdateProfileInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateProfile>>,
+        TError,
+        {data: BodyType<UpdateProfileInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateProfileMutationOptions(options));
+    }
+
+export const getUpdateThemeUrl = () => {
+
+
+
+
+  return `/api/auth/theme`
+}
+
+/**
+ * @summary Update the current user's light/dark/system theme preference
+ */
+export const updateTheme = async (updateThemeInput: UpdateThemeInput, options?: RequestInit): Promise<User> => {
+
+  return customFetch<User>(getUpdateThemeUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updateThemeInput,)
+  }
+);}
+
+
+
+
+export const getUpdateThemeMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateTheme>>, TError,{data: BodyType<UpdateThemeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateTheme>>, TError,{data: BodyType<UpdateThemeInput>}, TContext> => {
+
+const mutationKey = ['updateTheme'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateTheme>>, {data: BodyType<UpdateThemeInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateTheme(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateThemeMutationResult = NonNullable<Awaited<ReturnType<typeof updateTheme>>>
+    export type UpdateThemeMutationBody = BodyType<UpdateThemeInput>
+    export type UpdateThemeMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Update the current user's light/dark/system theme preference
+ */
+export const useUpdateTheme = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateTheme>>, TError,{data: BodyType<UpdateThemeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateTheme>>,
+        TError,
+        {data: BodyType<UpdateThemeInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateThemeMutationOptions(options));
     }
 
 export const getListCategoriesUrl = () => {
