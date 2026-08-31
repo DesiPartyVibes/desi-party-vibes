@@ -4,7 +4,8 @@ import {
   useGetHomepageStats, 
   useListFeaturedVendors, 
   useListCategories,
-  useListCities
+  useListCities,
+  useGetCurrentUser
 } from "@workspace/api-client-react";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,7 @@ export default function Home() {
   const { data: featuredVendors, isLoading: vendorsLoading } = useListFeaturedVendors();
   const { data: categories, isLoading: categoriesLoading } = useListCategories();
   const { data: cities } = useListCities();
+  const { data: user } = useGetCurrentUser();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -164,24 +166,26 @@ export default function Home() {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-24 bg-primary text-primary-foreground relative overflow-hidden">
-        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-10" />
-        <div className="container mx-auto px-4 text-center relative z-10">
-          <h2 className="text-4xl font-serif font-bold mb-6">Ready to plan your celebration?</h2>
-          <p className="text-lg mb-10 max-w-2xl mx-auto opacity-90">
-            Join thousands of couples and families who have found their perfect vendors on Desi Party Vibes.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" variant="secondary" className="text-secondary-foreground" asChild>
-              <Link href="/register">Create Free Account</Link>
-            </Button>
-            <Button size="lg" variant="outline" className="bg-transparent border-primary-foreground hover:bg-primary-foreground hover:text-primary" asChild>
-              <Link href="/vendors">Browse Vendors First</Link>
-            </Button>
+      {/* CTA Section — only relevant to visitors who don't have an account yet */}
+      {!user && (
+        <section className="py-24 bg-primary text-primary-foreground relative overflow-hidden">
+          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-10" />
+          <div className="container mx-auto px-4 text-center relative z-10">
+            <h2 className="text-4xl font-serif font-bold mb-6">Ready to plan your celebration?</h2>
+            <p className="text-lg mb-10 max-w-2xl mx-auto opacity-90">
+              Join thousands of couples and families who have found their perfect vendors on Desi Party Vibes.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button size="lg" variant="secondary" className="text-secondary-foreground" asChild>
+                <Link href="/register">Create Free Account</Link>
+              </Button>
+              <Button size="lg" variant="outline" className="bg-transparent border-primary-foreground hover:bg-primary-foreground hover:text-primary" asChild>
+                <Link href="/vendors">Browse Vendors First</Link>
+              </Button>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
     </Layout>
   );
 }
