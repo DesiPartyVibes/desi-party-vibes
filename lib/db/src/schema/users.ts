@@ -16,6 +16,7 @@ export const usersTable = pgTable("users", {
   avatarUrl: text("avatar_url"),
   phone: text("phone"),
   address: text("address"),
+  themePreference: text("theme_preference", { enum: ["light", "dark", "system"] }).notNull().default("system"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
