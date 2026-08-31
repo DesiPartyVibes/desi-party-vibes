@@ -229,6 +229,76 @@ paths:
               schema:
                 $ref: "#/components/schemas/MessageResponse"
 
+  /auth/profile/request-otp:
+    post:
+      operationId: requestProfileOtp
+      tags: [users]
+      summary: Send a verification code to the current user's email before allowing profile changes
+      responses:
+        "200":
+          description: Code sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /auth/profile/verify-otp:
+    post:
+      operationId: verifyProfileOtp
+      tags: [users]
+      summary: Confirm the profile-update code and receive a short-lived edit grant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerifyProfileOtpInput"
+      responses:
+        "200":
+          description: Verified
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VerifyProfileOtpResponse"
+
+  /auth/profile:
+    patch:
+      operationId: updateProfile
+      tags: [users]
+      summary: Update name, email, phone, address, password, and/or avatar (requires a valid edit grant)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProfileInput"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /auth/theme:
+    patch:
+      operationId: updateTheme
+      tags: [users]
+      summary: Update the current user's light/dark/system theme preference
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateThemeInput"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
   # CATEGORIES
   /categories:
     get:
@@ -1108,7 +1178,50 @@ components:
           type: string
         purpose:
           type: string
-          enum: [signup, password_reset, login]
+          enum: [signup, password_reset, login, profile_update]
+
+    VerifyProfileOtpInput:
+      type: object
+      required: [code]
+      properties:
+        code:
+          type: string
+
+    VerifyProfileOtpResponse:
+      type: object
+      required: [editGrant]
+      properties:
+        editGrant:
+          type: string
+          description: Short-lived (10 min) proof-of-verification token to include with PATCH /auth/profile
+
+    UpdateProfileInput:
+      type: object
+      required: [editGrant]
+      properties:
+        editGrant:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        address:
+          type: string
+        newPassword:
+          type: string
+        avatarUrl:
+          type: string
+          description: Data URL of a client-side compressed image
+
+    UpdateThemeInput:
+      type: object
+      required: [theme]
+      properties:
+        theme:
+          type: string
+          enum: [light, dark, system]
 
     User:
       type: object
@@ -1131,6 +1244,13 @@ components:
           type: boolean
         avatarUrl:
           type: ["string", "null"]
+        phone:
+          type: ["string", "null"]
+        address:
+          type: ["string", "null"]
+        themePreference:
+          type: string
+          enum: [light, dark, system]
         createdAt:
           type: string
 
