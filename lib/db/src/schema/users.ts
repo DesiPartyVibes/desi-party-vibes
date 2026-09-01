@@ -17,6 +17,23 @@ export const usersTable = pgTable("users", {
   phone: text("phone"),
   address: text("address"),
   themePreference: text("theme_preference", { enum: ["light", "dark", "system"] }).notNull().default("system"),
+  // Gates the non-critical status-update emails (vendor approved/rejected,
+  // claim approved/rejected). OTP/security codes are never gated by this --
+  // they're sent regardless, since disabling them would break login/signup/
+  // password-reset/profile-edit flows that depend on the user receiving them.
+  emailNotifications: boolean("email_notifications").notNull().default(true),
+  // Whether this user's name/avatar show on the public reviews they've
+  // left, vs "Anonymous". Defaults to visible, matching current behavior.
+  reviewsArePublic: boolean("reviews_are_public").notNull().default(true),
+  // Self-service "pause my account" -- a disabled account can't log in
+  // (except that a successful login, which requires the password AND an
+  // emailed OTP, automatically reactivates it). Distinct from rejectedAt
+  // (admin-driven vendor rejection) and deletedAt (permanent).
+  accountStatus: text("account_status", { enum: ["active", "disabled"] }).notNull().default("active"),
+  // Soft-delete marker. Deleted accounts are scrubbed of personal data
+  // (see DELETE /auth/account) rather than hard-deleted, since bookings,
+  // reviews, and vendor claims reference the user row.
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
