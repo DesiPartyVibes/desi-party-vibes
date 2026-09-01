@@ -299,6 +299,125 @@ paths:
               schema:
                 $ref: "#/components/schemas/User"
 
+  /auth/email-preferences:
+    patch:
+      operationId: updateEmailPreferences
+      tags: [users]
+      summary: Update whether the current user receives non-critical account/activity emails (OTP codes are always sent)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateEmailPreferencesInput"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /auth/privacy:
+    patch:
+      operationId: updatePrivacy
+      tags: [users]
+      summary: Update whether the current user's name/avatar show on reviews they've written
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePrivacyInput"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /auth/sessions:
+    get:
+      operationId: listSessions
+      tags: [users]
+      summary: List the current user's active sessions (devices/browsers signed in)
+      responses:
+        "200":
+          description: Sessions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListSessionsResponse"
+    delete:
+      operationId: revokeOtherSessions
+      tags: [users]
+      summary: Sign out of all devices/sessions except the current one
+      responses:
+        "200":
+          description: Signed out of other devices
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /auth/sessions/{id}:
+    delete:
+      operationId: revokeSession
+      tags: [users]
+      summary: Revoke a single session by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Session revoked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /auth/account/status:
+    patch:
+      operationId: updateAccountStatus
+      tags: [users]
+      summary: Temporarily disable or reactivate the current user's own account (requires a valid edit grant)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateAccountStatusInput"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /auth/account:
+    delete:
+      operationId: deleteAccount
+      tags: [users]
+      summary: Permanently delete (soft-delete/anonymize) the current user's own account (requires a valid edit grant)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeleteAccountInput"
+      responses:
+        "200":
+          description: Account deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
   # CATEGORIES
   /categories:
     get:
@@ -441,13 +560,19 @@ paths:
     delete:
       operationId: deleteVendor
       tags: [vendors]
-      summary: Delete vendor (admin)
+      summary: Delete a vendor listing (admin, or the owning vendor with a valid edit grant)
       parameters:
         - name: id
           in: path
           required: true
           schema:
             type: integer
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeleteVendorInput"
       responses:
         "200":
           description: Deleted
@@ -1223,6 +1348,70 @@ components:
           type: string
           enum: [light, dark, system]
 
+    UpdateEmailPreferencesInput:
+      type: object
+      required: [emailNotifications]
+      properties:
+        emailNotifications:
+          type: boolean
+
+    UpdatePrivacyInput:
+      type: object
+      required: [reviewsArePublic]
+      properties:
+        reviewsArePublic:
+          type: boolean
+
+    SessionInfo:
+      type: object
+      required: [id, createdAt, lastUsedAt, isCurrent]
+      properties:
+        id:
+          type: integer
+        userAgent:
+          type: ["string", "null"]
+        ipAddress:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        lastUsedAt:
+          type: string
+        isCurrent:
+          type: boolean
+
+    ListSessionsResponse:
+      type: object
+      required: [sessions]
+      properties:
+        sessions:
+          type: array
+          items:
+            $ref: "#/components/schemas/SessionInfo"
+
+    UpdateAccountStatusInput:
+      type: object
+      required: [editGrant, status]
+      properties:
+        editGrant:
+          type: string
+        status:
+          type: string
+          enum: [active, disabled]
+
+    DeleteAccountInput:
+      type: object
+      required: [editGrant]
+      properties:
+        editGrant:
+          type: string
+
+    DeleteVendorInput:
+      type: object
+      properties:
+        editGrant:
+          type: string
+          description: Required when a vendor owner (not an admin) deletes their own listing.
+
     User:
       type: object
       required: [id, name, email, role, isVerified, emailVerified, isRejected, createdAt]
@@ -1251,6 +1440,13 @@ components:
         themePreference:
           type: string
           enum: [light, dark, system]
+        emailNotifications:
+          type: boolean
+        reviewsArePublic:
+          type: boolean
+        accountStatus:
+          type: string
+          enum: [active, disabled]
         createdAt:
           type: string
 
