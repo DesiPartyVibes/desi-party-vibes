@@ -6,6 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { UserRole } from './userRole';
+import type { UserThemePreference } from './userThemePreference';
+import type { UserAccountStatus } from './userAccountStatus';
 
 export interface User {
   id: number;
@@ -17,5 +19,13 @@ export interface User {
   isRejected: boolean;
   /** @nullable */
   avatarUrl?: string | null;
+  /** @nullable */
+  phone?: string | null;
+  /** @nullable */
+  address?: string | null;
+  themePreference?: UserThemePreference;
+  emailNotifications?: boolean;
+  reviewsArePublic?: boolean;
+  accountStatus?: UserAccountStatus;
   createdAt: string;
 }
