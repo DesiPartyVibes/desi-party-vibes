@@ -1,4 +1,5 @@
-import { Switch, Route, Router as WouterRouter } from "wouter";
+import { useEffect } from "react";
+import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ApiError } from "@workspace/api-client-react";
 import { Toaster } from "@/components/ui/toaster";
@@ -40,6 +41,18 @@ const queryClient = new QueryClient({
   },
 });
 
+// wouter doesn't reset scroll position on navigation (unlike e.g. Next.js),
+// so clicking a link from partway down a long page (like the homepage CTA)
+// left the new page scrolled to wherever the old page happened to be. This
+// resets to the top on every route change.
+function ScrollToTop() {
+  const [location] = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location]);
+  return null;
+}
+
 function Router() {
   return (
     <Switch>
@@ -69,6 +82,7 @@ function App() {
       <ThemeProvider>
         <TooltipProvider>
           <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+            <ScrollToTop />
             <Router />
           </WouterRouter>
           <Toaster />
