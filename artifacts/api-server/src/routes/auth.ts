@@ -1,12 +1,12 @@
-import { Router } from "express";
+import { Router, Request } from "express";
 import { db } from "@workspace/db";
-import { usersTable, sessionsTable, otpCodesTable } from "@workspace/db";
-import { eq, and, desc } from "drizzle-orm";
+import { usersTable, sessionsTable, otpCodesTable, vendorsTable } from "@workspace/db";
+import { eq, and, ne, desc } from "drizzle-orm";
 import { z } from "zod";
 import crypto from "crypto";
 import { sendEmail } from "../lib/email.js";
 import { logger } from "../lib/logger.js";
-import { extractSessionToken, getSessionUser } from "../lib/auth.js";
+import { extractSessionToken, getSessionUser, generateEditGrant, verifyEditGrant } from "../lib/auth.js";
 
 const router = Router();
 
@@ -18,36 +18,46 @@ function generateToken(): string {
   return crypto.randomBytes(32).toString("hex");
 }
 
-// Short-lived, stateless "proof of OTP" grant handed back once a user
-// confirms a profile-update OTP. The client must present it with the
-// follow-up PATCH /profile or PATCH /theme-adjacent update call, so that
-// endpoint doesn't have to be re-protected by a second OTP entry. It's just
-// an HMAC over (userId, expiry) — no DB row needed, and it can't be replayed
-// past its 10-minute window or reused by a different account.
-const EDIT_GRANT_SECRET = process.env.EDIT_GRANT_SECRET || "desipartyhub_profile_edit_grant_secret";
-const EDIT_GRANT_TTL_MS = 10 * 60 * 1000; // 10 minutes
-
-function generateEditGrant(userId: number): string {
-  const expiresAt = Date.now() + EDIT_GRANT_TTL_MS;
-  const payload = `${userId}.${expiresAt}`;
-  const sig = crypto.createHmac("sha256", EDIT_GRANT_SECRET).update(payload).digest("hex");
-  return Buffer.from(`${payload}.${sig}`).toString("base64url");
+// Creates a session row and captures the request's user-agent/IP so the
+// Manage Sessions screen can show roughly what device each one belongs to.
+// req.ip depends on Express's trust proxy setting; behind Railway's proxy
+// this resolves to the real client IP once trust proxy is configured, and
+// falls back to the proxy's IP (still useful, just less precise) otherwise.
+async function createSession(req: Request, userId: number): Promise<{ token: string; expiresAt: Date }> {
+  const token = generateToken();
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+  const now = new Date();
+  await db.insert(sessionsTable).values({
+    userId,
+    token,
+    expiresAt,
+    userAgent: req.headers["user-agent"] || null,
+    ipAddress: req.ip || null,
+    lastUsedAt: now,
+  });
+  return { token, expiresAt };
 }
 
-function verifyEditGrant(userId: number, token: string | undefined): boolean {
-  if (!token) return false;
-  try {
-    const decoded = Buffer.from(token, "base64url").toString();
-    const [uidStr, expiresAtStr, sig] = decoded.split(".");
-    if (!uidStr || !expiresAtStr || !sig) return false;
-    if (Number(uidStr) !== userId) return false;
-    if (Date.now() > Number(expiresAtStr)) return false;
-    const expectedSig = crypto.createHmac("sha256", EDIT_GRANT_SECRET).update(`${uidStr}.${expiresAtStr}`).digest("hex");
-    return crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expectedSig));
-  } catch {
-    return false;
-  }
+function formatUser(user: typeof usersTable.$inferSelect) {
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    isVerified: user.isVerified,
+    emailVerified: user.emailVerified,
+    isRejected: !!user.rejectedAt,
+    avatarUrl: user.avatarUrl,
+    phone: user.phone,
+    address: user.address,
+    themePreference: user.themePreference,
+    emailNotifications: user.emailNotifications,
+    reviewsArePublic: user.reviewsArePublic,
+    accountStatus: user.accountStatus,
+    createdAt: user.createdAt.toISOString(),
+  };
 }
+
 
 // Normalise phone: strip non-digits, prepend +1 if no country code
 function normalisePhone(raw: string): string {
@@ -177,22 +187,7 @@ router.post("/register", async (req, res): Promise<void> => {
     // whole registration over a transient email-provider hiccup.
   }
 
-  res.status(201).json({
-    user: {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      isVerified: user.isVerified,
-      emailVerified: user.emailVerified,
-      isRejected: !!user.rejectedAt,
-      avatarUrl: user.avatarUrl,
-      phone: user.phone,
-      address: user.address,
-      themePreference: user.themePreference,
-      createdAt: user.createdAt.toISOString(),
-    },
-  });
+  res.status(201).json({ user: formatUser(user) });
 });
 
 // POST /api/auth/register/verify
@@ -219,11 +214,10 @@ router.post("/register/verify", async (req, res): Promise<void> => {
       return;
     }
     await db.update(usersTable).set({ emailVerified: true }).where(eq(usersTable.id, user.id));
+    user.emailVerified = true;
   }
 
-  const token = generateToken();
-  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-  await db.insert(sessionsTable).values({ userId: user.id, token, expiresAt });
+  const { token, expiresAt } = await createSession(req, user.id);
 
   res.cookie("session_token", token, {
     httpOnly: true,
@@ -232,23 +226,7 @@ router.post("/register/verify", async (req, res): Promise<void> => {
     secure: process.env.NODE_ENV === "production",
   });
 
-  res.json({
-    token,
-    user: {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      isVerified: user.isVerified,
-      emailVerified: true,
-      isRejected: !!user.rejectedAt,
-      avatarUrl: user.avatarUrl,
-      phone: user.phone,
-      address: user.address,
-      themePreference: user.themePreference,
-      createdAt: user.createdAt.toISOString(),
-    },
-  });
+  res.json({ token, user: formatUser(user) });
 });
 
 // POST /api/auth/forgot-password/request
@@ -407,7 +385,9 @@ router.post("/login", async (req, res): Promise<void> => {
   const { email, password } = parsed.data;
 
   const [user] = await db.select().from(usersTable).where(eq(usersTable.email, email)).limit(1);
-  if (!user || user.passwordHash !== hashPassword(password)) {
+  // Deleted accounts are treated the same as "no account" — the row still
+  // exists (soft delete) but should behave as if it doesn't for login.
+  if (!user || user.deletedAt || user.passwordHash !== hashPassword(password)) {
     res.status(401).json({ error: "Invalid credentials" });
     return;
   }
@@ -450,9 +430,15 @@ router.post("/login/verify", async (req, res): Promise<void> => {
     return;
   }
 
-  const token = generateToken();
-  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-  await db.insert(sessionsTable).values({ userId: user.id, token, expiresAt });
+  // A successful login (password + emailed OTP) is proof enough that it's
+  // really the account owner, so a self-disabled account is automatically
+  // reactivated here rather than requiring a separate "reactivate" step.
+  if (user.accountStatus === "disabled") {
+    await db.update(usersTable).set({ accountStatus: "active" }).where(eq(usersTable.id, user.id));
+    user.accountStatus = "active";
+  }
+
+  const { token, expiresAt } = await createSession(req, user.id);
 
   res.cookie("session_token", token, {
     httpOnly: true,
@@ -461,23 +447,7 @@ router.post("/login/verify", async (req, res): Promise<void> => {
     secure: process.env.NODE_ENV === "production",
   });
 
-  res.json({
-    token,
-    user: {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      isVerified: user.isVerified,
-      emailVerified: user.emailVerified,
-      isRejected: !!user.rejectedAt,
-      avatarUrl: user.avatarUrl,
-      phone: user.phone,
-      address: user.address,
-      themePreference: user.themePreference,
-      createdAt: user.createdAt.toISOString(),
-    },
-  });
+  res.json({ token, user: formatUser(user) });
 });
 
 router.post("/logout", async (req, res): Promise<void> => {
@@ -490,38 +460,12 @@ router.post("/logout", async (req, res): Promise<void> => {
 });
 
 router.get("/me", async (req, res): Promise<void> => {
-  const token = extractSessionToken(req);
-  if (!token) {
+  const user = await getSessionUser(req);
+  if (!user) {
     res.status(401).json({ error: "Not authenticated" });
     return;
   }
-
-  const [session] = await db.select().from(sessionsTable).where(eq(sessionsTable.token, token)).limit(1);
-  if (!session || session.expiresAt < new Date()) {
-    res.status(401).json({ error: "Session expired" });
-    return;
-  }
-
-  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, session.userId)).limit(1);
-  if (!user) {
-    res.status(401).json({ error: "User not found" });
-    return;
-  }
-
-  res.json({
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    role: user.role,
-    isVerified: user.isVerified,
-    emailVerified: user.emailVerified,
-    isRejected: !!user.rejectedAt,
-    avatarUrl: user.avatarUrl,
-    phone: user.phone,
-    address: user.address,
-    themePreference: user.themePreference,
-    createdAt: user.createdAt.toISOString(),
-  });
+  res.json(formatUser(user));
 });
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -532,7 +476,10 @@ router.get("/me", async (req, res): Promise<void> => {
 // short-lived edit grant; PATCH /profile applies whichever fields were
 // submitted, gated on that grant. Theme preference is intentionally NOT
 // gated behind OTP — it's a display setting, not account data, so it has
-// its own unprotected PATCH /theme endpoint below.
+// its own unprotected PATCH /theme endpoint below. Email preferences and
+// privacy are the same story — display/notification settings, not account
+// data — while account status and deletion reuse this same edit-grant gate
+// since those are as sensitive as editing the profile itself.
 // ─────────────────────────────────────────────────────────────────────────
 
 // POST /api/auth/profile/request-otp
@@ -636,20 +583,7 @@ router.patch("/profile", async (req, res): Promise<void> => {
 
   const [updated] = await db.update(usersTable).set(updates).where(eq(usersTable.id, user.id)).returning();
 
-  res.json({
-    id: updated.id,
-    name: updated.name,
-    email: updated.email,
-    role: updated.role,
-    isVerified: updated.isVerified,
-    emailVerified: updated.emailVerified,
-    isRejected: !!updated.rejectedAt,
-    avatarUrl: updated.avatarUrl,
-    phone: updated.phone,
-    address: updated.address,
-    themePreference: updated.themePreference,
-    createdAt: updated.createdAt.toISOString(),
-  });
+  res.json(formatUser(updated));
 });
 
 // PATCH /api/auth/theme
@@ -674,20 +608,219 @@ router.patch("/theme", async (req, res): Promise<void> => {
     .where(eq(usersTable.id, user.id))
     .returning();
 
+  res.json(formatUser(updated));
+});
+
+// PATCH /api/auth/email-preferences
+// Not OTP-gated, same reasoning as theme. This only controls the
+// non-critical status-update emails (vendor approval, claim decisions,
+// etc.) — OTP/security codes always send regardless of this setting, so
+// there's no toggle for those.
+router.patch("/email-preferences", async (req, res): Promise<void> => {
+  const user = await getSessionUser(req);
+  if (!user) {
+    res.status(401).json({ error: "Not authenticated" });
+    return;
+  }
+
+  const parsed = z.object({ emailNotifications: z.boolean() }).safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid input" });
+    return;
+  }
+
+  const [updated] = await db
+    .update(usersTable)
+    .set({ emailNotifications: parsed.data.emailNotifications })
+    .where(eq(usersTable.id, user.id))
+    .returning();
+
+  res.json(formatUser(updated));
+});
+
+// PATCH /api/auth/privacy
+// Not OTP-gated — a visibility preference, not account data.
+router.patch("/privacy", async (req, res): Promise<void> => {
+  const user = await getSessionUser(req);
+  if (!user) {
+    res.status(401).json({ error: "Not authenticated" });
+    return;
+  }
+
+  const parsed = z.object({ reviewsArePublic: z.boolean() }).safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid input" });
+    return;
+  }
+
+  const [updated] = await db
+    .update(usersTable)
+    .set({ reviewsArePublic: parsed.data.reviewsArePublic })
+    .where(eq(usersTable.id, user.id))
+    .returning();
+
+  res.json(formatUser(updated));
+});
+
+// ─────────────────────────────────────────────────────────────────────────
+// Session management: list/revoke the sessions (devices/browsers) currently
+// signed in to this account.
+// ─────────────────────────────────────────────────────────────────────────
+
+// GET /api/auth/sessions
+router.get("/sessions", async (req, res): Promise<void> => {
+  const user = await getSessionUser(req);
+  if (!user) {
+    res.status(401).json({ error: "Not authenticated" });
+    return;
+  }
+
+  const currentToken = extractSessionToken(req);
+  const sessions = await db
+    .select()
+    .from(sessionsTable)
+    .where(eq(sessionsTable.userId, user.id))
+    .orderBy(desc(sessionsTable.lastUsedAt));
+
   res.json({
-    id: updated.id,
-    name: updated.name,
-    email: updated.email,
-    role: updated.role,
-    isVerified: updated.isVerified,
-    emailVerified: updated.emailVerified,
-    isRejected: !!updated.rejectedAt,
-    avatarUrl: updated.avatarUrl,
-    phone: updated.phone,
-    address: updated.address,
-    themePreference: updated.themePreference,
-    createdAt: updated.createdAt.toISOString(),
+    sessions: sessions.map((s) => ({
+      id: s.id,
+      userAgent: s.userAgent,
+      ipAddress: s.ipAddress,
+      createdAt: s.createdAt.toISOString(),
+      lastUsedAt: (s.lastUsedAt ?? s.createdAt).toISOString(),
+      isCurrent: s.token === currentToken,
+    })),
   });
+});
+
+// DELETE /api/auth/sessions/:id — revoke a single session by ID. Scoped to
+// the caller's own sessions so one account can't revoke another's.
+router.delete("/sessions/:id", async (req, res): Promise<void> => {
+  const user = await getSessionUser(req);
+  if (!user) {
+    res.status(401).json({ error: "Not authenticated" });
+    return;
+  }
+
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) {
+    res.status(400).json({ error: "Invalid session ID" });
+    return;
+  }
+
+  await db.delete(sessionsTable).where(and(eq(sessionsTable.id, id), eq(sessionsTable.userId, user.id)));
+  res.json({ message: "Session revoked." });
+});
+
+// DELETE /api/auth/sessions — "Sign out of all other devices": revokes
+// every session for this account except the one making the request.
+router.delete("/sessions", async (req, res): Promise<void> => {
+  const user = await getSessionUser(req);
+  if (!user) {
+    res.status(401).json({ error: "Not authenticated" });
+    return;
+  }
+
+  const currentToken = extractSessionToken(req);
+  await db
+    .delete(sessionsTable)
+    .where(
+      currentToken
+        ? and(eq(sessionsTable.userId, user.id), ne(sessionsTable.token, currentToken))
+        : eq(sessionsTable.userId, user.id)
+    );
+
+  res.json({ message: "Signed out of all other devices." });
+});
+
+// ─────────────────────────────────────────────────────────────────────────
+// Account status: temporarily disable (and auto-reactivate on next
+// successful login) or permanently delete an account. Both reuse the same
+// edit-grant gate as PATCH /profile — a fresh OTP is required first.
+// ─────────────────────────────────────────────────────────────────────────
+
+// PATCH /api/auth/account/status
+router.patch("/account/status", async (req, res): Promise<void> => {
+  const user = await getSessionUser(req);
+  if (!user) {
+    res.status(401).json({ error: "Not authenticated" });
+    return;
+  }
+
+  const parsed = z.object({ editGrant: z.string().min(1), status: z.enum(["active", "disabled"]) }).safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid input" });
+    return;
+  }
+
+  if (!verifyEditGrant(user.id, parsed.data.editGrant)) {
+    res.status(401).json({ error: "Please verify a fresh code before making changes." });
+    return;
+  }
+
+  const [updated] = await db
+    .update(usersTable)
+    .set({ accountStatus: parsed.data.status })
+    .where(eq(usersTable.id, user.id))
+    .returning();
+
+  if (parsed.data.status === "disabled") {
+    // Disabling signs the account out everywhere, including this device —
+    // reactivating requires logging back in (password + emailed OTP),
+    // which doubles as proof it's really the account owner doing it.
+    await db.delete(sessionsTable).where(eq(sessionsTable.userId, user.id));
+    res.clearCookie("session_token");
+  }
+
+  res.json(formatUser(updated));
+});
+
+// DELETE /api/auth/account
+// Soft-delete: the row stays (bookings/reviews/vendor claims reference it)
+// but is scrubbed of personal data and its email is freed up for reuse.
+router.delete("/account", async (req, res): Promise<void> => {
+  const user = await getSessionUser(req);
+  if (!user) {
+    res.status(401).json({ error: "Not authenticated" });
+    return;
+  }
+
+  const parsed = z.object({ editGrant: z.string().min(1) }).safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid input" });
+    return;
+  }
+
+  if (!verifyEditGrant(user.id, parsed.data.editGrant)) {
+    res.status(401).json({ error: "Please verify a fresh code before making changes." });
+    return;
+  }
+
+  const anonymizedEmail = `deleted-${user.id}-${Date.now()}@deleted.desipartyvibes.local`;
+  await db
+    .update(usersTable)
+    .set({
+      deletedAt: new Date(),
+      name: "Deleted User",
+      firstName: null,
+      lastName: null,
+      email: anonymizedEmail,
+      passwordHash: crypto.randomBytes(32).toString("hex"),
+      phone: null,
+      address: null,
+      avatarUrl: null,
+    })
+    .where(eq(usersTable.id, user.id));
+
+  // A deleted vendor's listing(s) shouldn't stay visible on the marketplace.
+  if (user.role === "vendor") {
+    await db.update(vendorsTable).set({ isActive: false }).where(eq(vendorsTable.userId, user.id));
+  }
+
+  await db.delete(sessionsTable).where(eq(sessionsTable.userId, user.id));
+  res.clearCookie("session_token");
+  res.json({ message: "Your account has been deleted." });
 });
 
 export default router;

@@ -24,8 +24,15 @@ router.get("/", async (req, res): Promise<void> => {
   const users = userIds.length > 0
     ? await db.select().from(usersTable).where(inArray(usersTable.id, userIds))
     : [];
+  // Respect each reviewer's own privacy preference: if they've turned off
+  // "show my name on reviews", their name/avatar are withheld here even
+  // though the review content itself is still shown.
   const userMap: Record<number, { name: string; avatarUrl: string | null }> = {};
-  for (const u of users) userMap[u.id] = { name: u.name, avatarUrl: u.avatarUrl };
+  for (const u of users) {
+    userMap[u.id] = u.reviewsArePublic
+      ? { name: u.name, avatarUrl: u.avatarUrl }
+      : { name: "Anonymous", avatarUrl: null };
+  }
 
   res.json(
     reviews.map((r) => ({
@@ -86,8 +93,8 @@ router.post("/", async (req, res): Promise<void> => {
     id: review.id,
     vendorId: review.vendorId,
     userId: review.userId,
-    userName: user.name,
-    userAvatarUrl: user.avatarUrl,
+    userName: user.reviewsArePublic ? user.name : "Anonymous",
+    userAvatarUrl: user.reviewsArePublic ? user.avatarUrl : null,
     rating: review.rating,
     comment: review.comment,
     createdAt: review.createdAt.toISOString(),
