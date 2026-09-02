@@ -25,9 +25,10 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 import { useToast } from "@/hooks/use-toast";
 import { useTheme } from "@/components/theme/theme-provider";
-import { Loader2, Sun, Moon, Monitor, Mail, Phone, MapPin } from "lucide-react";
+import { Loader2, Sun, Moon, Monitor, Mail, Phone, MapPin, UserCog, Palette, MessageCircle, ChevronRight, ChevronDown } from "lucide-react";
 
 function ContactSupportDialog() {
   const { toast } = useToast();
@@ -66,9 +67,17 @@ function ContactSupportDialog() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <Button variant="outline" onClick={() => setOpen(true)}>
-        Contact Support
-      </Button>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="w-full flex items-center justify-between px-4 py-3.5 text-left hover:bg-muted/50 transition-colors"
+      >
+        <span className="flex items-center gap-3">
+          <MessageCircle className="h-4 w-4 text-muted-foreground" />
+          <span className="font-medium text-sm">Contact Support</span>
+        </span>
+        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+      </button>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Contact Support</DialogTitle>
@@ -306,9 +315,17 @@ function EditProfileDialog({ user }: { user: EditableUser }) {
         else setOpen(true);
       }}
     >
-      <Button variant="outline" onClick={handleOpen}>
-        Edit Profile
-      </Button>
+      <button
+        type="button"
+        onClick={handleOpen}
+        className="w-full flex items-center justify-between px-4 py-3.5 text-left hover:bg-muted/50 transition-colors"
+      >
+        <span className="flex items-center gap-3">
+          <UserCog className="h-4 w-4 text-muted-foreground" />
+          <span className="font-medium text-sm">Edit Profile</span>
+        </span>
+        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+      </button>
       <DialogContent className="sm:max-w-md">
         {step === "otp" ? (
           <>
@@ -463,6 +480,30 @@ function ThemeToggle() {
   );
 }
 
+function AppearanceRow() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <CollapsibleTrigger asChild>
+        <button
+          type="button"
+          className="w-full flex items-center justify-between px-4 py-3.5 text-left hover:bg-muted/50 transition-colors"
+        >
+          <span className="flex items-center gap-3">
+            <Palette className="h-4 w-4 text-muted-foreground" />
+            <span className="font-medium text-sm">Appearance</span>
+          </span>
+          <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
+        </button>
+      </CollapsibleTrigger>
+      <CollapsibleContent className="px-4 pb-4">
+        <ThemeToggle />
+      </CollapsibleContent>
+    </Collapsible>
+  );
+}
+
 export default function Profile() {
   const [, setLocation] = useLocation();
   const { data: user, isLoading } = useGetCurrentUser();
@@ -545,25 +586,12 @@ export default function Profile() {
               </div>
             </CardHeader>
             <CardContent className="p-6">
-              <div className="space-y-8">
-                <div className="space-y-4">
-                  <h3 className="font-medium text-lg border-b pb-2">Account Settings</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Update your name, email, phone, address, password, or profile photo. We'll send a
-                    verification code to your email first to confirm it's you.
-                  </p>
-                  <div className="flex flex-wrap gap-3">
-                    <EditProfileDialog user={user} />
-                    <ContactSupportDialog />
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <h3 className="font-medium text-lg border-b pb-2">Appearance</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Choose how DesiPartyVibes looks on this and future visits.
-                  </p>
-                  <ThemeToggle />
+              <div className="space-y-4">
+                <h3 className="font-medium text-lg border-b pb-2">Account Settings</h3>
+                <div className="rounded-md border divide-y">
+                  <EditProfileDialog user={user} />
+                  <AppearanceRow />
+                  <ContactSupportDialog />
                 </div>
               </div>
             </CardContent>
