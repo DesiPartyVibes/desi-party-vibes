@@ -54,6 +54,14 @@ export const UserThemePreference = {
   system: 'system',
 } as const;
 
+export type UserAccountStatus = typeof UserAccountStatus[keyof typeof UserAccountStatus];
+
+
+export const UserAccountStatus = {
+  active: 'active',
+  disabled: 'disabled',
+} as const;
+
 export interface User {
   id: number;
   name: string;
@@ -69,6 +77,9 @@ export interface User {
   /** @nullable */
   address?: string | null;
   themePreference?: UserThemePreference;
+  emailNotifications?: boolean;
+  reviewsArePublic?: boolean;
+  accountStatus?: UserAccountStatus;
   createdAt: string;
 }
 
@@ -157,6 +168,50 @@ export const UpdateThemeInputTheme = {
 
 export interface UpdateThemeInput {
   theme: UpdateThemeInputTheme;
+}
+
+export interface UpdateEmailPreferencesInput {
+  emailNotifications: boolean;
+}
+
+export interface UpdatePrivacyInput {
+  reviewsArePublic: boolean;
+}
+
+export interface SessionInfo {
+  id: number;
+  /** @nullable */
+  userAgent?: string | null;
+  /** @nullable */
+  ipAddress?: string | null;
+  createdAt: string;
+  lastUsedAt: string;
+  isCurrent: boolean;
+}
+
+export interface ListSessionsResponse {
+  sessions: SessionInfo[];
+}
+
+export type UpdateAccountStatusInputStatus = typeof UpdateAccountStatusInputStatus[keyof typeof UpdateAccountStatusInputStatus];
+
+
+export const UpdateAccountStatusInputStatus = {
+  active: 'active',
+  disabled: 'disabled',
+} as const;
+
+export interface UpdateAccountStatusInput {
+  editGrant: string;
+  status: UpdateAccountStatusInputStatus;
+}
+
+export interface DeleteAccountInput {
+  editGrant: string;
+}
+
+export interface DeleteVendorInput {
+  editGrant?: string;
 }
 
 export interface Category {

@@ -133,11 +133,15 @@ router.patch("/users/:id/verify", async (req, res): Promise<void> => {
     .returning();
 
   // Fire-and-forget: fulfills the promise made in the pending-review email sent at signup.
-  sendEmail(
-    updated.email,
-    "Your DesiPartyVibes vendor account has been approved!",
-    `<p>Hi ${updated.firstName || updated.name},</p><p>Good news — your vendor account has been <strong>approved</strong>! Your business listing is now live on DesiPartyVibes and visible to couples planning their celebrations.</p><p><a href="https://www.desipartyvibes.com/vendor-dashboard">Visit your dashboard</a></p><p>— The DesiPartyVibes Team</p>`
-  ).catch((err) => logger.error({ err, userId: updated.id }, "Failed to send vendor approval email"));
+  // Skipped if the recipient has turned off account/activity emails —
+  // OTP/security codes are the only emails that are never opt-outable.
+  if (updated.emailNotifications) {
+    sendEmail(
+      updated.email,
+      "Your DesiPartyVibes vendor account has been approved!",
+      `<p>Hi ${updated.firstName || updated.name},</p><p>Good news — your vendor account has been <strong>approved</strong>! Your business listing is now live on DesiPartyVibes and visible to couples planning their celebrations.</p><p><a href="https://www.desipartyvibes.com/vendor-dashboard">Visit your dashboard</a></p><p>— The DesiPartyVibes Team</p>`
+    ).catch((err) => logger.error({ err, userId: updated.id }, "Failed to send vendor approval email"));
+  }
 
   res.json({ id: updated.id, isVerified: updated.isVerified, isRejected: !!updated.rejectedAt });
 });
@@ -172,11 +176,13 @@ router.patch("/users/:id/reject", async (req, res): Promise<void> => {
     .returning();
 
   // Fire-and-forget: let the applicant know their vendor application wasn't approved.
-  sendEmail(
-    updated.email,
-    "Update on your DesiPartyVibes vendor application",
-    `<p>Hi ${updated.firstName || updated.name},</p><p>Thanks for your interest in listing your business on DesiPartyVibes. After review, we're not able to approve your vendor account at this time.</p><p>If you believe this was a mistake or have questions, please reach out to our support team.</p><p>— The DesiPartyVibes Team</p>`
-  ).catch((err) => logger.error({ err, userId: updated.id }, "Failed to send vendor rejection email"));
+  if (updated.emailNotifications) {
+    sendEmail(
+      updated.email,
+      "Update on your DesiPartyVibes vendor application",
+      `<p>Hi ${updated.firstName || updated.name},</p><p>Thanks for your interest in listing your business on DesiPartyVibes. After review, we're not able to approve your vendor account at this time.</p><p>If you believe this was a mistake or have questions, please reach out to our support team.</p><p>— The DesiPartyVibes Team</p>`
+    ).catch((err) => logger.error({ err, userId: updated.id }, "Failed to send vendor rejection email"));
+  }
 
   res.json({ id: updated.id, isVerified: updated.isVerified, isRejected: !!updated.rejectedAt });
 });
@@ -296,7 +302,7 @@ router.patch("/vendor-claims/:id/approve", async (req, res): Promise<void> => {
   const [vendor] = await db.select().from(vendorsTable).where(eq(vendorsTable.id, updated.vendorId)).limit(1);
   const [claimUser] = await db.select().from(usersTable).where(eq(usersTable.id, updated.userId)).limit(1);
 
-  if (claimUser) {
+  if (claimUser && claimUser.emailNotifications) {
     // Fire-and-forget: let the vendor know their listing is now linked to their account.
     sendEmail(
       claimUser.email,
@@ -332,7 +338,7 @@ router.patch("/vendor-claims/:id/reject", async (req, res): Promise<void> => {
   const [vendor] = await db.select().from(vendorsTable).where(eq(vendorsTable.id, updated.vendorId)).limit(1);
   const [claimUser] = await db.select().from(usersTable).where(eq(usersTable.id, updated.userId)).limit(1);
 
-  if (claimUser) {
+  if (claimUser && claimUser.emailNotifications) {
     // Fire-and-forget: let the vendor know their claim wasn't approved, so they aren't left wondering.
     sendEmail(
       claimUser.email,

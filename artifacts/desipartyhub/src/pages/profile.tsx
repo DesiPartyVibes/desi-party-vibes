@@ -6,7 +6,20 @@ import {
   useRequestProfileOtp,
   useVerifyProfileOtp,
   useUpdateProfile,
+  useUpdateEmailPreferences,
+  useUpdatePrivacy,
+  useListSessions,
+  useRevokeSession,
+  useRevokeOtherSessions,
+  useUpdateAccountStatus,
+  useDeleteAccount,
+  useListMyVendorClaims,
+  useGetVendor,
+  useUpdateVendor,
+  useDeleteVendor,
+  getGetCurrentUserQueryKey,
 } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -26,9 +39,34 @@ import {
 } from "@/components/ui/dialog";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { setStoredToken } from "@/lib/auth-token";
 import { useTheme } from "@/components/theme/theme-provider";
-import { Loader2, Sun, Moon, Monitor, Mail, Phone, MapPin, UserCog, Palette, MessageCircle, ChevronRight, ChevronDown } from "lucide-react";
+import {
+  Loader2,
+  Sun,
+  Moon,
+  Monitor,
+  Mail,
+  Phone,
+  MapPin,
+  UserCog,
+  Palette,
+  MessageCircle,
+  ChevronRight,
+  ChevronDown,
+  Bell,
+  Eye,
+  Laptop,
+  ShieldAlert,
+  Smartphone,
+  LogOut,
+  Trash2,
+  PauseCircle,
+  PlayCircle,
+} from "lucide-react";
 
 function ContactSupportDialog() {
   const { toast } = useToast();
@@ -504,6 +542,681 @@ function AppearanceRow() {
   );
 }
 
+// Not OTP-gated: turning marketing/status notifications on or off isn't
+// sensitive the way editing account details is, and OTP emails themselves
+// keep going regardless of this setting (see the note in the row below) so
+// there's no risk of a user locking themselves out of verification codes.
+function EmailPreferencesRow({ emailNotifications }: { emailNotifications: boolean }) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const updateEmailPreferences = useUpdateEmailPreferences();
+
+  function handleChange(next: boolean) {
+    updateEmailPreferences.mutate(
+      { data: { emailNotifications: next } },
+      {
+        onSuccess: (user) => {
+          queryClient.setQueryData(getGetCurrentUserQueryKey(), user);
+        },
+        onError: (err: any) => {
+          toast({
+            variant: "destructive",
+            title: "Couldn't update email preferences",
+            description: err?.data?.error || "Please try again.",
+          });
+        },
+      }
+    );
+  }
+
+  return (
+    <div className="flex items-center justify-between gap-4 px-4 py-3.5">
+      <div className="flex items-start gap-3">
+        <Bell className="h-4 w-4 text-muted-foreground mt-0.5" />
+        <div>
+          <p className="font-medium text-sm">Email Notifications</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Booking updates and account activity. Security codes always send regardless of this setting.
+          </p>
+        </div>
+      </div>
+      <Switch
+        checked={emailNotifications}
+        onCheckedChange={handleChange}
+        disabled={updateEmailPreferences.isPending}
+        aria-label="Toggle email notifications"
+      />
+    </div>
+  );
+}
+
+function PrivacyRow({ reviewsArePublic }: { reviewsArePublic: boolean }) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const updatePrivacy = useUpdatePrivacy();
+
+  function handleChange(next: boolean) {
+    updatePrivacy.mutate(
+      { data: { reviewsArePublic: next } },
+      {
+        onSuccess: (user) => {
+          queryClient.setQueryData(getGetCurrentUserQueryKey(), user);
+        },
+        onError: (err: any) => {
+          toast({
+            variant: "destructive",
+            title: "Couldn't update privacy setting",
+            description: err?.data?.error || "Please try again.",
+          });
+        },
+      }
+    );
+  }
+
+  return (
+    <div className="flex items-center justify-between gap-4 px-4 py-3.5">
+      <div className="flex items-start gap-3">
+        <Eye className="h-4 w-4 text-muted-foreground mt-0.5" />
+        <div>
+          <p className="font-medium text-sm">Show My Name on Reviews</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            When off, reviews you write show as "Anonymous" instead of your name.
+          </p>
+        </div>
+      </div>
+      <Switch
+        checked={reviewsArePublic}
+        onCheckedChange={handleChange}
+        disabled={updatePrivacy.isPending}
+        aria-label="Toggle review privacy"
+      />
+    </div>
+  );
+}
+
+function timeAgo(dateStr: string): string {
+  const diffMs = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diffMs / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `${days}d ago`;
+  return format(new Date(dateStr), "MMM d, yyyy");
+}
+
+function ManageSessionsDialog() {
+  const { toast } = useToast();
+  const [open, setOpen] = useState(false);
+  const { data, isLoading, refetch } = useListSessions({ query: { enabled: open } });
+  const revokeSession = useRevokeSession();
+  const revokeOtherSessions = useRevokeOtherSessions();
+
+  function handleRevoke(id: number) {
+    revokeSession.mutate(
+      { id },
+      {
+        onSuccess: () => {
+          toast({ description: "That session has been signed out." });
+          refetch();
+        },
+        onError: (err: any) => {
+          toast({
+            variant: "destructive",
+            title: "Couldn't sign out that session",
+            description: err?.data?.error || "Please try again.",
+          });
+        },
+      }
+    );
+  }
+
+  function handleRevokeAllOthers() {
+    revokeOtherSessions.mutate(undefined, {
+      onSuccess: () => {
+        toast({ description: "All other devices have been signed out." });
+        refetch();
+      },
+      onError: (err: any) => {
+        toast({
+          variant: "destructive",
+          title: "Couldn't sign out other devices",
+          description: err?.data?.error || "Please try again.",
+        });
+      },
+    });
+  }
+
+  const sessions = data?.sessions ?? [];
+  const hasOtherSessions = sessions.some((s) => !s.isCurrent);
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="w-full flex items-center justify-between px-4 py-3.5 text-left hover:bg-muted/50 transition-colors"
+      >
+        <span className="flex items-center gap-3">
+          <Laptop className="h-4 w-4 text-muted-foreground" />
+          <span className="font-medium text-sm">Manage Sessions</span>
+        </span>
+        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+      </button>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Manage Sessions</DialogTitle>
+          <DialogDescription>Devices and browsers currently signed in to your account.</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-2 max-h-[50vh] overflow-y-auto pr-1">
+          {isLoading ? (
+            <div className="space-y-2">
+              <Skeleton className="h-14 w-full" />
+              <Skeleton className="h-14 w-full" />
+            </div>
+          ) : sessions.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-4 text-center">No active sessions found.</p>
+          ) : (
+            sessions.map((s) => (
+              <div key={s.id} className="flex items-start justify-between gap-3 rounded-md border p-3">
+                <div className="flex items-start gap-2.5 min-w-0">
+                  <Smartphone className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium truncate max-w-[220px]">
+                        {s.userAgent ? s.userAgent : "Unknown device"}
+                      </p>
+                      {s.isCurrent && (
+                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                          This device
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Last active {timeAgo(s.lastUsedAt)}
+                      {s.ipAddress ? ` · ${s.ipAddress}` : ""}
+                    </p>
+                  </div>
+                </div>
+                {!s.isCurrent && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive hover:text-destructive shrink-0"
+                    onClick={() => handleRevoke(s.id)}
+                    disabled={revokeSession.isPending}
+                  >
+                    Sign out
+                  </Button>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+        {hasOtherSessions && (
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={handleRevokeAllOthers}
+              disabled={revokeOtherSessions.isPending}
+              className="w-full"
+            >
+              {revokeOtherSessions.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Signing out...
+                </>
+              ) : (
+                <>
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Sign out all other devices
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// Everything here is destructive or account-affecting, so it sits behind
+// the same "verify it's you" OTP flow as Edit Profile before any of these
+// actions become clickable. Disabling/deleting the account clears the
+// session server-side, so on success we send the user back to the homepage
+// rather than trying to keep the page around.
+function DangerZoneDialog({ user }: { user: { email: string; role: string } }) {
+  const { toast } = useToast();
+  const requestOtp = useRequestProfileOtp();
+  const verifyOtp = useVerifyProfileOtp();
+  const updateAccountStatus = useUpdateAccountStatus();
+  const deleteAccount = useDeleteAccount();
+  const updateVendor = useUpdateVendor();
+  const deleteVendor = useDeleteVendor();
+
+  const [open, setOpen] = useState(false);
+  const [step, setStep] = useState<"otp" | "actions">("otp");
+  const [code, setCode] = useState("");
+  const [otpError, setOtpError] = useState("");
+  const [editGrant, setEditGrant] = useState<string | null>(null);
+  const [confirmingAction, setConfirmingAction] = useState<"deleteAccount" | "deleteBusiness" | null>(null);
+  const [confirmText, setConfirmText] = useState("");
+
+  const { data: claims } = useListMyVendorClaims({ query: { enabled: open && step === "actions" && user.role === "vendor" } });
+  const approvedClaim = claims?.find((c) => c.status === "approved");
+  const { data: myVendor, refetch: refetchVendor } = useGetVendor(approvedClaim?.vendorId ?? 0, {
+    query: { enabled: !!approvedClaim && open && step === "actions" },
+  });
+
+  function closeAndReset() {
+    setOpen(false);
+    setStep("otp");
+    setCode("");
+    setOtpError("");
+    setEditGrant(null);
+    setConfirmingAction(null);
+    setConfirmText("");
+  }
+
+  function handleOpen() {
+    setStep("otp");
+    setCode("");
+    setOtpError("");
+    setEditGrant(null);
+    setConfirmingAction(null);
+    setConfirmText("");
+    setOpen(true);
+    requestOtp.mutate(undefined, {
+      onError: (err: any) => {
+        toast({
+          variant: "destructive",
+          title: "Couldn't send a code",
+          description: err?.data?.error || "Please try again.",
+        });
+        setOpen(false);
+      },
+    });
+  }
+
+  function handleResend() {
+    requestOtp.mutate(undefined, {
+      onSuccess: () => toast({ description: "A new code has been sent to your email." }),
+      onError: (err: any) => {
+        toast({
+          variant: "destructive",
+          title: "Couldn't resend code",
+          description: err?.data?.error || "Please try again.",
+        });
+      },
+    });
+  }
+
+  function handleVerify(e: React.FormEvent) {
+    e.preventDefault();
+    setOtpError("");
+    if (code.trim().length < 6) {
+      setOtpError("Enter the 6-digit code from your email.");
+      return;
+    }
+    verifyOtp.mutate(
+      { data: { code: code.trim() } },
+      {
+        onSuccess: (data) => {
+          setEditGrant(data.editGrant);
+          setStep("actions");
+        },
+        onError: (err: any) => {
+          setOtpError(err?.data?.error || "That code is invalid or has expired.");
+        },
+      }
+    );
+  }
+
+  function handleDisableAccount() {
+    if (!editGrant) return;
+    updateAccountStatus.mutate(
+      { data: { editGrant, status: "disabled" } },
+      {
+        onSuccess: () => {
+          toast({ description: "Your account has been temporarily disabled. Log back in anytime to reactivate it." });
+          setStoredToken(null);
+          window.location.href = "/";
+        },
+        onError: (err: any) => {
+          toast({
+            variant: "destructive",
+            title: "Couldn't disable account",
+            description: err?.data?.error || "Please try again.",
+          });
+        },
+      }
+    );
+  }
+
+  function handleDeleteAccount() {
+    if (!editGrant) return;
+    deleteAccount.mutate(
+      { data: { editGrant } },
+      {
+        onSuccess: () => {
+          toast({ description: "Your account has been deleted." });
+          setStoredToken(null);
+          window.location.href = "/";
+        },
+        onError: (err: any) => {
+          toast({
+            variant: "destructive",
+            title: "Couldn't delete account",
+            description: err?.data?.error || "Please try again.",
+          });
+        },
+      }
+    );
+  }
+
+  function handleToggleBusiness() {
+    if (!approvedClaim || !myVendor) return;
+    updateVendor.mutate(
+      {
+        id: approvedClaim.vendorId,
+        data: { phone: myVendor.phone || "", email: myVendor.email || "", isActive: !myVendor.isActive },
+      },
+      {
+        onSuccess: () => {
+          toast({
+            description: myVendor.isActive
+              ? "Your business listing has been hidden from public view."
+              : "Your business listing is active again.",
+          });
+          refetchVendor();
+        },
+        onError: (err: any) => {
+          toast({
+            variant: "destructive",
+            title: "Couldn't update your business listing",
+            description: err?.data?.error || "Please try again.",
+          });
+        },
+      }
+    );
+  }
+
+  function handleDeleteBusiness() {
+    if (!approvedClaim || !editGrant) return;
+    deleteVendor.mutate(
+      { id: approvedClaim.vendorId, data: { editGrant } },
+      {
+        onSuccess: () => {
+          toast({ description: "Your business listing has been permanently deleted." });
+          setConfirmingAction(null);
+          setConfirmText("");
+        },
+        onError: (err: any) => {
+          toast({
+            variant: "destructive",
+            title: "Couldn't delete your business listing",
+            description: err?.data?.error || "Please try again.",
+          });
+        },
+      }
+    );
+  }
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) closeAndReset();
+        else setOpen(true);
+      }}
+    >
+      <button
+        type="button"
+        onClick={handleOpen}
+        className="w-full flex items-center justify-between px-4 py-3.5 text-left hover:bg-destructive/5 transition-colors"
+      >
+        <span className="flex items-center gap-3">
+          <ShieldAlert className="h-4 w-4 text-destructive" />
+          <span className="font-medium text-sm text-destructive">Danger Zone</span>
+        </span>
+        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+      </button>
+      <DialogContent className="sm:max-w-md">
+        {step === "otp" ? (
+          <>
+            <DialogHeader>
+              <DialogTitle>Verify it's you</DialogTitle>
+              <DialogDescription>
+                Enter the 6-digit code we sent to <strong>{user.email}</strong> to continue.
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleVerify} className="space-y-4">
+              <div className="flex flex-col items-center gap-3">
+                <InputOTP maxLength={6} value={code} onChange={setCode}>
+                  <InputOTPGroup>
+                    <InputOTPSlot index={0} />
+                    <InputOTPSlot index={1} />
+                    <InputOTPSlot index={2} />
+                    <InputOTPSlot index={3} />
+                    <InputOTPSlot index={4} />
+                    <InputOTPSlot index={5} />
+                  </InputOTPGroup>
+                </InputOTP>
+                {otpError && <p className="text-sm text-destructive">{otpError}</p>}
+              </div>
+              <Button type="submit" className="w-full" disabled={verifyOtp.isPending}>
+                {verifyOtp.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Verifying...
+                  </>
+                ) : (
+                  "Verify"
+                )}
+              </Button>
+              <div className="text-center text-sm">
+                <button
+                  type="button"
+                  onClick={handleResend}
+                  disabled={requestOtp.isPending}
+                  className="text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2"
+                >
+                  Didn't get a code? Resend
+                </button>
+              </div>
+            </form>
+          </>
+        ) : (
+          <>
+            <DialogHeader>
+              <DialogTitle className="text-destructive">Danger Zone</DialogTitle>
+              <DialogDescription>These actions affect your account{user.role === "vendor" ? " and business listing" : ""}.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-5 max-h-[55vh] overflow-y-auto pr-1">
+              <div className="space-y-2">
+                <h4 className="text-sm font-semibold">Account</h4>
+                <div className="rounded-md border divide-y">
+                  <div className="flex items-center justify-between gap-3 p-3">
+                    <div>
+                      <p className="text-sm font-medium">Temporarily disable account</p>
+                      <p className="text-xs text-muted-foreground">
+                        Signs you out everywhere. Log back in anytime to reactivate.
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleDisableAccount}
+                      disabled={updateAccountStatus.isPending}
+                    >
+                      <PauseCircle className="h-4 w-4 mr-1.5" />
+                      Disable
+                    </Button>
+                  </div>
+                  <div className="p-3 space-y-2">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-medium text-destructive">Delete account permanently</p>
+                        <p className="text-xs text-muted-foreground">This cannot be undone.</p>
+                      </div>
+                      {confirmingAction !== "deleteAccount" && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-destructive hover:text-destructive border-destructive/30"
+                          onClick={() => {
+                            setConfirmingAction("deleteAccount");
+                            setConfirmText("");
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4 mr-1.5" />
+                          Delete
+                        </Button>
+                      )}
+                    </div>
+                    {confirmingAction === "deleteAccount" && (
+                      <div className="space-y-2 pt-1">
+                        <Label htmlFor="confirm-delete-account" className="text-xs">
+                          Type DELETE to confirm
+                        </Label>
+                        <Input
+                          id="confirm-delete-account"
+                          value={confirmText}
+                          onChange={(e) => setConfirmText(e.target.value)}
+                          placeholder="DELETE"
+                        />
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setConfirmingAction(null)}
+                            disabled={deleteAccount.isPending}
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            disabled={confirmText !== "DELETE" || deleteAccount.isPending}
+                            onClick={handleDeleteAccount}
+                          >
+                            {deleteAccount.isPending ? (
+                              <>
+                                <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                                Deleting...
+                              </>
+                            ) : (
+                              "Confirm delete"
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {user.role === "vendor" && approvedClaim && myVendor && (
+                <div className="space-y-2">
+                  <h4 className="text-sm font-semibold">Business</h4>
+                  <div className="rounded-md border divide-y">
+                    <div className="flex items-center justify-between gap-3 p-3">
+                      <div>
+                        <p className="text-sm font-medium">
+                          {myVendor.isActive ? "Temporarily disable business" : "Reactivate business"}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {myVendor.isActive
+                            ? "Hides your listing from public search and browsing."
+                            : "Your listing is currently hidden from public view."}
+                        </p>
+                      </div>
+                      <Button variant="outline" size="sm" onClick={handleToggleBusiness} disabled={updateVendor.isPending}>
+                        {myVendor.isActive ? (
+                          <>
+                            <PauseCircle className="h-4 w-4 mr-1.5" />
+                            Disable
+                          </>
+                        ) : (
+                          <>
+                            <PlayCircle className="h-4 w-4 mr-1.5" />
+                            Reactivate
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                    <div className="p-3 space-y-2">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-medium text-destructive">Delete business permanently</p>
+                          <p className="text-xs text-muted-foreground">This cannot be undone.</p>
+                        </div>
+                        {confirmingAction !== "deleteBusiness" && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-destructive hover:text-destructive border-destructive/30"
+                            onClick={() => {
+                              setConfirmingAction("deleteBusiness");
+                              setConfirmText("");
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4 mr-1.5" />
+                            Delete
+                          </Button>
+                        )}
+                      </div>
+                      {confirmingAction === "deleteBusiness" && (
+                        <div className="space-y-2 pt-1">
+                          <Label htmlFor="confirm-delete-business" className="text-xs">
+                            Type DELETE to confirm
+                          </Label>
+                          <Input
+                            id="confirm-delete-business"
+                            value={confirmText}
+                            onChange={(e) => setConfirmText(e.target.value)}
+                            placeholder="DELETE"
+                          />
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setConfirmingAction(null)}
+                              disabled={deleteVendor.isPending}
+                            >
+                              Cancel
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              disabled={confirmText !== "DELETE" || deleteVendor.isPending}
+                              onClick={handleDeleteBusiness}
+                            >
+                              {deleteVendor.isPending ? (
+                                <>
+                                  <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                                  Deleting...
+                                </>
+                              ) : (
+                                "Confirm delete"
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function Profile() {
   const [, setLocation] = useLocation();
   const { data: user, isLoading } = useGetCurrentUser();
@@ -591,7 +1304,11 @@ export default function Profile() {
                 <div className="rounded-md border divide-y">
                   <EditProfileDialog user={user} />
                   <AppearanceRow />
+                  <EmailPreferencesRow emailNotifications={user.emailNotifications ?? true} />
+                  <PrivacyRow reviewsArePublic={user.reviewsArePublic ?? true} />
+                  <ManageSessionsDialog />
                   <ContactSupportDialog />
+                  <DangerZoneDialog user={user} />
                 </div>
               </div>
             </CardContent>

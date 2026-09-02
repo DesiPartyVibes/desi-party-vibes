@@ -3,7 +3,7 @@ import { db } from "@workspace/db";
 import { vendorsTable, categoriesTable, reviewsTable, vendorClaimsTable } from "@workspace/db";
 import { eq, and, gte, lte, ilike, sql, desc, or, inArray } from "drizzle-orm";
 import { z } from "zod";
-import { getSessionUser } from "../lib/auth.js";
+import { getSessionUser, verifyEditGrant } from "../lib/auth.js";
 
 const router = Router();
 
@@ -238,9 +238,11 @@ router.post("/", async (req, res): Promise<void> => {
 });
 
 // Fields a vendor is allowed to edit on their own listing. isFeatured,
-// isActive, userId, rating, and reviewCount stay admin-only levers -
-// unknown keys are stripped by zod's default "strip" behavior, so this
-// schema doubles as the allowlist.
+// userId, rating, and reviewCount stay admin-only levers - unknown keys are
+// stripped by zod's default "strip" behavior, so this schema doubles as the
+// allowlist. isActive is owner-settable (added for the profile page's
+// "temporarily disable my business" control) so a vendor can pull their own
+// listing from public view without needing an admin.
 const vendorSelfUpdateSchema = z.object({
   name: z.string().min(1).optional(),
   categoryId: z.number().int().optional(),
@@ -257,6 +259,7 @@ const vendorSelfUpdateSchema = z.object({
   phone: z.string().trim().min(7, "Phone number is required"),
   email: z.string().trim().min(1, "Email is required").email("Enter a valid email address"),
   website: z.string().optional(),
+  isActive: z.boolean().optional(),
 });
 
 router.patch("/:id", async (req, res): Promise<void> => {
@@ -316,10 +319,15 @@ router.patch("/:id", async (req, res): Promise<void> => {
   res.json(formatVendor(vendor, cat?.name ?? ""));
 });
 
+// Vendor owners may permanently delete their own business listing, but
+// only with a valid profile-edit OTP grant (the same "prove it's you" flow
+// used for account changes) -- this is a destructive, irreversible action
+// so it gets the same gating as deleting the account itself. Admins can
+// still delete any listing outright, no grant required.
 router.delete("/:id", async (req, res): Promise<void> => {
   const user = await getSessionUser(req);
-  if (!user || user.role !== "admin") {
-    res.status(403).json({ error: "Forbidden" });
+  if (!user) {
+    res.status(401).json({ error: "Not authenticated" });
     return;
   }
 
@@ -327,6 +335,34 @@ router.delete("/:id", async (req, res): Promise<void> => {
   if (isNaN(id)) {
     res.status(400).json({ error: "Invalid ID" });
     return;
+  }
+
+  const isAdmin = user.role === "admin";
+
+  if (!isAdmin) {
+    const [claim] = await db
+      .select()
+      .from(vendorClaimsTable)
+      .where(
+        and(
+          eq(vendorClaimsTable.vendorId, id),
+          eq(vendorClaimsTable.userId, user.id),
+          eq(vendorClaimsTable.status, "approved")
+        )
+      )
+      .limit(1);
+    const isOwner = !!claim;
+
+    if (!isOwner) {
+      res.status(403).json({ error: "Forbidden" });
+      return;
+    }
+
+    const editGrant = typeof req.body?.editGrant === "string" ? req.body.editGrant : undefined;
+    if (!verifyEditGrant(user.id, editGrant)) {
+      res.status(403).json({ error: "This action requires a valid verification code. Please verify your identity again." });
+      return;
+    }
   }
 
   await db.delete(vendorsTable).where(eq(vendorsTable.id, id));

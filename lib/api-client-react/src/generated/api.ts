@@ -50,6 +50,12 @@ import type {
   VerifyProfileOtpResponse,
   UpdateProfileInput,
   UpdateThemeInput,
+  UpdateEmailPreferencesInput,
+  UpdatePrivacyInput,
+  ListSessionsResponse,
+  UpdateAccountStatusInput,
+  DeleteAccountInput,
+  DeleteVendorInput,
   Review,
   ReviewInput,
   User,
@@ -1221,6 +1227,501 @@ export const useUpdateTheme = <TError = ErrorType<unknown>,
       return useMutation(getUpdateThemeMutationOptions(options));
     }
 
+export const getUpdateEmailPreferencesUrl = () => {
+
+
+
+
+  return `/api/auth/email-preferences`
+}
+
+/**
+ * @summary Update the current user's email notification preference
+ */
+export const updateEmailPreferences = async (updateEmailPreferencesInput: UpdateEmailPreferencesInput, options?: RequestInit): Promise<User> => {
+
+  return customFetch<User>(getUpdateEmailPreferencesUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updateEmailPreferencesInput,)
+  }
+);}
+
+
+
+
+export const getUpdateEmailPreferencesMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateEmailPreferences>>, TError,{data: BodyType<UpdateEmailPreferencesInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateEmailPreferences>>, TError,{data: BodyType<UpdateEmailPreferencesInput>}, TContext> => {
+
+const mutationKey = ['updateEmailPreferences'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateEmailPreferences>>, {data: BodyType<UpdateEmailPreferencesInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateEmailPreferences(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateEmailPreferencesMutationResult = NonNullable<Awaited<ReturnType<typeof updateEmailPreferences>>>
+    export type UpdateEmailPreferencesMutationBody = BodyType<UpdateEmailPreferencesInput>
+    export type UpdateEmailPreferencesMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Update the current user's email notification preference
+ */
+export const useUpdateEmailPreferences = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateEmailPreferences>>, TError,{data: BodyType<UpdateEmailPreferencesInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateEmailPreferences>>,
+        TError,
+        {data: BodyType<UpdateEmailPreferencesInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateEmailPreferencesMutationOptions(options));
+    }
+
+export const getUpdatePrivacyUrl = () => {
+
+
+
+
+  return `/api/auth/privacy`
+}
+
+/**
+ * @summary Update the current user's review-privacy preference
+ */
+export const updatePrivacy = async (updatePrivacyInput: UpdatePrivacyInput, options?: RequestInit): Promise<User> => {
+
+  return customFetch<User>(getUpdatePrivacyUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updatePrivacyInput,)
+  }
+);}
+
+
+
+
+export const getUpdatePrivacyMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePrivacy>>, TError,{data: BodyType<UpdatePrivacyInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updatePrivacy>>, TError,{data: BodyType<UpdatePrivacyInput>}, TContext> => {
+
+const mutationKey = ['updatePrivacy'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updatePrivacy>>, {data: BodyType<UpdatePrivacyInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updatePrivacy(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdatePrivacyMutationResult = NonNullable<Awaited<ReturnType<typeof updatePrivacy>>>
+    export type UpdatePrivacyMutationBody = BodyType<UpdatePrivacyInput>
+    export type UpdatePrivacyMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Update the current user's review-privacy preference
+ */
+export const useUpdatePrivacy = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePrivacy>>, TError,{data: BodyType<UpdatePrivacyInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updatePrivacy>>,
+        TError,
+        {data: BodyType<UpdatePrivacyInput>},
+        TContext
+      > => {
+      return useMutation(getUpdatePrivacyMutationOptions(options));
+    }
+
+export const getListSessionsUrl = () => {
+
+
+
+
+  return `/api/auth/sessions`
+}
+
+/**
+ * @summary List active sessions for the current user
+ */
+export const listSessions = async ( options?: RequestInit): Promise<ListSessionsResponse> => {
+
+  return customFetch<ListSessionsResponse>(getListSessionsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListSessionsQueryKey = () => {
+    return [
+    `/api/auth/sessions`
+    ] as const;
+    }
+
+
+export const getListSessionsQueryOptions = <TData = Awaited<ReturnType<typeof listSessions>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSessions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListSessionsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSessions>>> = ({ signal }) => listSessions({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listSessions>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListSessionsQueryResult = NonNullable<Awaited<ReturnType<typeof listSessions>>>
+export type ListSessionsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List active sessions for the current user
+ */
+
+export function useListSessions<TData = Awaited<ReturnType<typeof listSessions>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSessions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListSessionsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getRevokeSessionUrl = (id: number,) => {
+
+
+
+
+  return `/api/auth/sessions/${id}`
+}
+
+/**
+ * @summary Revoke a single session by id
+ */
+export const revokeSession = async (id: number, options?: RequestInit): Promise<MessageResponse> => {
+
+  return customFetch<MessageResponse>(getRevokeSessionUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getRevokeSessionMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeSession>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof revokeSession>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['revokeSession'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof revokeSession>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  revokeSession(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RevokeSessionMutationResult = NonNullable<Awaited<ReturnType<typeof revokeSession>>>
+
+    export type RevokeSessionMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Revoke a single session by id
+ */
+export const useRevokeSession = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeSession>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof revokeSession>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getRevokeSessionMutationOptions(options));
+    }
+
+export const getRevokeOtherSessionsUrl = () => {
+
+
+
+
+  return `/api/auth/sessions`
+}
+
+/**
+ * @summary Sign out all sessions other than the current one
+ */
+export const revokeOtherSessions = async ( options?: RequestInit): Promise<MessageResponse> => {
+
+  return customFetch<MessageResponse>(getRevokeOtherSessionsUrl(),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getRevokeOtherSessionsMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeOtherSessions>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof revokeOtherSessions>>, TError,void, TContext> => {
+
+const mutationKey = ['revokeOtherSessions'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof revokeOtherSessions>>, void> = () => {
+
+
+          return  revokeOtherSessions(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RevokeOtherSessionsMutationResult = NonNullable<Awaited<ReturnType<typeof revokeOtherSessions>>>
+
+    export type RevokeOtherSessionsMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Sign out all sessions other than the current one
+ */
+export const useRevokeOtherSessions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeOtherSessions>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof revokeOtherSessions>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getRevokeOtherSessionsMutationOptions(options));
+    }
+
+export const getUpdateAccountStatusUrl = () => {
+
+
+
+
+  return `/api/auth/account/status`
+}
+
+/**
+ * @summary Temporarily disable or reactivate the current user's account (OTP-gated)
+ */
+export const updateAccountStatus = async (updateAccountStatusInput: UpdateAccountStatusInput, options?: RequestInit): Promise<User> => {
+
+  return customFetch<User>(getUpdateAccountStatusUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updateAccountStatusInput,)
+  }
+);}
+
+
+
+
+export const getUpdateAccountStatusMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAccountStatus>>, TError,{data: BodyType<UpdateAccountStatusInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateAccountStatus>>, TError,{data: BodyType<UpdateAccountStatusInput>}, TContext> => {
+
+const mutationKey = ['updateAccountStatus'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateAccountStatus>>, {data: BodyType<UpdateAccountStatusInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateAccountStatus(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateAccountStatusMutationResult = NonNullable<Awaited<ReturnType<typeof updateAccountStatus>>>
+    export type UpdateAccountStatusMutationBody = BodyType<UpdateAccountStatusInput>
+    export type UpdateAccountStatusMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Temporarily disable or reactivate the current user's account (OTP-gated)
+ */
+export const useUpdateAccountStatus = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAccountStatus>>, TError,{data: BodyType<UpdateAccountStatusInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateAccountStatus>>,
+        TError,
+        {data: BodyType<UpdateAccountStatusInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateAccountStatusMutationOptions(options));
+    }
+
+export const getDeleteAccountUrl = () => {
+
+
+
+
+  return `/api/auth/account`
+}
+
+/**
+ * @summary Permanently delete the current user's account (OTP-gated)
+ */
+export const deleteAccount = async (deleteAccountInput: DeleteAccountInput, options?: RequestInit): Promise<MessageResponse> => {
+
+  return customFetch<MessageResponse>(getDeleteAccountUrl(),
+  {
+    ...options,
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      deleteAccountInput,)
+  }
+);}
+
+
+
+
+export const getDeleteAccountMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAccount>>, TError,{data: BodyType<DeleteAccountInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteAccount>>, TError,{data: BodyType<DeleteAccountInput>}, TContext> => {
+
+const mutationKey = ['deleteAccount'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteAccount>>, {data: BodyType<DeleteAccountInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  deleteAccount(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteAccountMutationResult = NonNullable<Awaited<ReturnType<typeof deleteAccount>>>
+    export type DeleteAccountMutationBody = BodyType<DeleteAccountInput>
+    export type DeleteAccountMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Permanently delete the current user's account (OTP-gated)
+ */
+export const useDeleteAccount = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAccount>>, TError,{data: BodyType<DeleteAccountInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteAccount>>,
+        TError,
+        {data: BodyType<DeleteAccountInput>},
+        TContext
+      > => {
+      return useMutation(getDeleteAccountMutationOptions(options));
+    }
+
 export const getListCategoriesUrl = () => {
 
 
@@ -1690,14 +2191,15 @@ export const getDeleteVendorUrl = (id: number,) => {
 /**
  * @summary Delete vendor (admin)
  */
-export const deleteVendor = async (id: number, options?: RequestInit): Promise<MessageResponse> => {
+export const deleteVendor = async (id: number, deleteVendorInput?: DeleteVendorInput, options?: RequestInit): Promise<MessageResponse> => {
 
   return customFetch<MessageResponse>(getDeleteVendorUrl(id),
   {
     ...options,
-    method: 'DELETE'
-
-
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      deleteVendorInput,)
   }
 );}
 
@@ -1705,8 +2207,8 @@ export const deleteVendor = async (id: number, options?: RequestInit): Promise<M
 
 
 export const getDeleteVendorMutationOptions = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteVendor>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof deleteVendor>>, TError,{id: number}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteVendor>>, TError,{id: number;data?: BodyType<DeleteVendorInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteVendor>>, TError,{id: number;data?: BodyType<DeleteVendorInput>}, TContext> => {
 
 const mutationKey = ['deleteVendor'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -1718,10 +2220,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteVendor>>, {id: number}> = (props) => {
-          const {id} = props ?? {};
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteVendor>>, {id: number;data?: BodyType<DeleteVendorInput>}> = (props) => {
+          const {id,data} = props ?? {};
 
-          return  deleteVendor(id,requestOptions)
+          return  deleteVendor(id,data,requestOptions)
         }
 
 
@@ -1739,11 +2241,11 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Delete vendor (admin)
  */
 export const useDeleteVendor = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteVendor>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteVendor>>, TError,{id: number;data?: BodyType<DeleteVendorInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof deleteVendor>>,
         TError,
-        {id: number},
+        {id: number;data?: BodyType<DeleteVendorInput>},
         TContext
       > => {
       return useMutation(getDeleteVendorMutationOptions(options));

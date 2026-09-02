@@ -215,6 +215,55 @@ export const UpdateThemeBody = zod.object({
 
 
 /**
+ * @summary Update the current user's email notification preference
+ */
+export const UpdateEmailPreferencesBody = zod.object({
+  "emailNotifications": zod.boolean()
+})
+
+
+/**
+ * @summary Update the current user's review-privacy preference
+ */
+export const UpdatePrivacyBody = zod.object({
+  "reviewsArePublic": zod.boolean()
+})
+
+
+/**
+ * @summary List active sessions for the current user
+ */
+export const ListSessionsResponseSessionsItem = zod.object({
+  "id": zod.number(),
+  "userAgent": zod.string().nullish(),
+  "ipAddress": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "lastUsedAt": zod.string(),
+  "isCurrent": zod.boolean()
+})
+export const ListSessionsResponse = zod.object({
+  "sessions": zod.array(ListSessionsResponseSessionsItem)
+})
+
+
+/**
+ * @summary Temporarily disable or reactivate the current user's account (OTP-gated)
+ */
+export const UpdateAccountStatusBody = zod.object({
+  "editGrant": zod.string(),
+  "status": zod.enum(['active', 'disabled'])
+})
+
+
+/**
+ * @summary Permanently delete the current user's account (OTP-gated)
+ */
+export const DeleteAccountBody = zod.object({
+  "editGrant": zod.string()
+})
+
+
+/**
  * @summary List all categories
  */
 export const ListCategoriesResponseItem = zod.object({
