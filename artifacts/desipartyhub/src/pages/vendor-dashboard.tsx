@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import {
   useGetCurrentUser,
@@ -24,8 +25,13 @@ import {
   useUpdateVendor,
   useListVendorBookings,
   useUpdateBookingStatus,
+  useListMyEvents,
+  useCreateEvent,
+  useDeleteEvent,
 } from "@workspace/api-client-react";
-import { Store, Search, Clock, Plus, Pencil, Inbox } from "lucide-react";
+import { Store, Search, Clock, Plus, Pencil, Inbox, CalendarDays, Trash2 } from "lucide-react";
+import { format } from "date-fns";
+import { EVENT_CATEGORIES } from "@/lib/event-categories";
 
 const registerSchema = z.object({
   name: z.string().min(2, "Business name is required"),
@@ -61,6 +67,28 @@ const editSchema = z.object({
 });
 
 type EditValues = z.infer<typeof editSchema>;
+
+const eventFormSchema = z.object({
+  title: z.string().min(3, "Give the event a title"),
+  description: z.string().min(10, "Add a short description (10+ characters)"),
+  category: z.string().min(1, "Please choose a category"),
+  city: z.string().min(1, "City is required"),
+  state: z.string().min(1, "State is required"),
+  venue: z.string().optional(),
+  eventDate: z.string().min(1, "Event date is required"),
+  endDate: z.string().optional(),
+  imageUrl: z.string().optional(),
+  ticketUrl: z.string().url("Enter a valid URL").optional().or(z.literal("")),
+  attachToBusiness: z.boolean().optional(),
+});
+
+type EventFormValues = z.infer<typeof eventFormSchema>;
+
+const eventStatusVariants: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
+  pending: "outline",
+  approved: "default",
+  rejected: "destructive",
+};
 
 // Resizes/compresses an uploaded image client-side and returns it as a JPEG
 // data URL, so vendors can upload a photo directly instead of hosting it
@@ -291,6 +319,97 @@ export default function VendorDashboard() {
           toast({
             variant: "destructive",
             title: "Couldn't update booking",
+            description: err?.data?.error || "Please try again.",
+          });
+        },
+      }
+    );
+  };
+
+  // My submitted events, any status - shown once the vendor account itself
+  // is verified, same gate as submitting one in the first place.
+  const { data: myEvents, refetch: refetchEvents } = useListMyEvents({
+    query: { enabled: !!user?.isVerified },
+  });
+  const createEvent = useCreateEvent();
+  const deleteEvent = useDeleteEvent();
+
+  const [isEventDialogOpen, setIsEventDialogOpen] = useState(false);
+  const eventForm = useForm<EventFormValues>({
+    resolver: zodResolver(eventFormSchema),
+    defaultValues: {
+      title: "",
+      description: "",
+      category: "",
+      city: "",
+      state: "",
+      venue: "",
+      eventDate: "",
+      endDate: "",
+      imageUrl: "",
+      ticketUrl: "",
+      attachToBusiness: false,
+    },
+  });
+
+  const openEventDialog = () => {
+    eventForm.reset({
+      title: "",
+      description: "",
+      category: "",
+      city: myVendor?.city || "",
+      state: myVendor?.state || "",
+      venue: "",
+      eventDate: "",
+      endDate: "",
+      imageUrl: "",
+      ticketUrl: "",
+      attachToBusiness: false,
+    });
+    setIsEventDialogOpen(true);
+  };
+
+  const onEventSubmit = (values: EventFormValues) => {
+    const { attachToBusiness, ticketUrl, venue, endDate, ...rest } = values;
+    createEvent.mutate(
+      {
+        data: {
+          ...rest,
+          venue: venue || undefined,
+          endDate: endDate || undefined,
+          ticketUrl: ticketUrl || undefined,
+          vendorId: attachToBusiness && approvedClaim ? approvedClaim.vendorId : undefined,
+        } as any,
+      },
+      {
+        onSuccess: () => {
+          toast({ description: "Event submitted — an admin will review it shortly." });
+          setIsEventDialogOpen(false);
+          refetchEvents();
+        },
+        onError: (err: any) => {
+          toast({
+            variant: "destructive",
+            title: "Couldn't submit event",
+            description: err?.data?.error || "Please check the form and try again.",
+          });
+        },
+      }
+    );
+  };
+
+  const handleDeleteEvent = (eventId: number) => {
+    deleteEvent.mutate(
+      { id: eventId },
+      {
+        onSuccess: () => {
+          toast({ description: "Event removed." });
+          refetchEvents();
+        },
+        onError: (err: any) => {
+          toast({
+            variant: "destructive",
+            title: "Couldn't remove event",
             description: err?.data?.error || "Please try again.",
           });
         },
@@ -569,6 +688,120 @@ export default function VendorDashboard() {
     </Dialog>
   );
 
+  const eventDialog = (
+    <Dialog open={isEventDialogOpen} onOpenChange={setIsEventDialogOpen}>
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Submit an Event</DialogTitle>
+        </DialogHeader>
+        <p className="text-sm text-muted-foreground -mt-2">
+          Submitted events are reviewed by an admin before they appear publicly.
+        </p>
+        <Form {...eventForm}>
+          <form onSubmit={eventForm.handleSubmit(onEventSubmit)} className="space-y-4 pt-2">
+            <FormField
+              control={eventForm.control}
+              name="title"
+              render={({ field }) => (
+                <FormItem><FormLabel>Event Title</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+              )}
+            />
+            <FormField
+              control={eventForm.control}
+              name="category"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Category</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value || undefined}>
+                    <FormControl><SelectTrigger><SelectValue placeholder="Choose a category" /></SelectTrigger></FormControl>
+                    <SelectContent>
+                      {EVENT_CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={eventForm.control}
+                name="city"
+                render={({ field }) => (
+                  <FormItem><FormLabel>City</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                )}
+              />
+              <FormField
+                control={eventForm.control}
+                name="state"
+                render={({ field }) => (
+                  <FormItem><FormLabel>State</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                )}
+              />
+            </div>
+            <FormField
+              control={eventForm.control}
+              name="venue"
+              render={({ field }) => (
+                <FormItem><FormLabel>Venue <span className="text-xs text-muted-foreground font-normal">(optional)</span></FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+              )}
+            />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={eventForm.control}
+                name="eventDate"
+                render={({ field }) => (
+                  <FormItem><FormLabel>Starts</FormLabel><FormControl><Input type="datetime-local" {...field} /></FormControl><FormMessage /></FormItem>
+                )}
+              />
+              <FormField
+                control={eventForm.control}
+                name="endDate"
+                render={({ field }) => (
+                  <FormItem><FormLabel>Ends <span className="text-xs text-muted-foreground font-normal">(optional)</span></FormLabel><FormControl><Input type="datetime-local" {...field} /></FormControl><FormMessage /></FormItem>
+                )}
+              />
+            </div>
+            <PhotoField control={eventForm.control} />
+            <FormField
+              control={eventForm.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem><FormLabel>Description</FormLabel><FormControl><Textarea rows={3} {...field} /></FormControl><FormMessage /></FormItem>
+              )}
+            />
+            <FormField
+              control={eventForm.control}
+              name="ticketUrl"
+              render={({ field }) => (
+                <FormItem><FormLabel>Tickets / More Info Link <span className="text-xs text-muted-foreground font-normal">(optional)</span></FormLabel><FormControl><Input placeholder="https://..." {...field} /></FormControl><FormMessage /></FormItem>
+              )}
+            />
+            {approvedClaim && (
+              <FormField
+                control={eventForm.control}
+                name="attachToBusiness"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-2 space-y-0">
+                    <FormControl>
+                      <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                    </FormControl>
+                    <FormLabel className="font-normal">
+                      This event is hosted by {approvedClaim.vendorName}
+                    </FormLabel>
+                  </FormItem>
+                )}
+              />
+            )}
+
+            <Button type="submit" className="w-full" disabled={createEvent.isPending}>
+              {createEvent.isPending ? "Submitting..." : "Submit for Review"}
+            </Button>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+
   return (
     <Layout>
       <div className="bg-slate-900 text-white py-8">
@@ -741,10 +974,57 @@ export default function VendorDashboard() {
             </CardContent>
           </Card>
         )}
+
+        {user?.isVerified && (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
+              <div className="flex items-center gap-2">
+                <CalendarDays className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-base">Your Events</CardTitle>
+              </div>
+              <Button size="sm" onClick={openEventDialog} className="gap-1.5">
+                <Plus className="h-3.5 w-3.5" /> Submit Event
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {!myEvents || myEvents.length === 0 ? (
+                <p className="text-sm text-muted-foreground">You haven't submitted any events yet.</p>
+              ) : (
+                myEvents.map((e) => (
+                  <div key={e.id} className="flex items-center justify-between border rounded-lg p-3 gap-3">
+                    <div className="min-w-0">
+                      <p className="font-medium truncate">{e.title}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {format(new Date(e.eventDate), "MMM d, yyyy")} · {e.city}, {e.state}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Badge variant={eventStatusVariants[e.status] ?? "outline"} className="capitalize">
+                        {e.status}
+                      </Badge>
+                      {e.status !== "approved" && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive hover:text-destructive"
+                          onClick={() => handleDeleteEvent(e.id)}
+                          disabled={deleteEvent.isPending}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {registerDialog}
       {editDialog}
+      {eventDialog}
     </Layout>
   );
 }

@@ -18,7 +18,10 @@ import {
   useAdminRejectVendor,
   useAdminListVendorClaims,
   useAdminApproveVendorClaim,
-  useAdminRejectVendorClaim
+  useAdminRejectVendorClaim,
+  useAdminListEvents,
+  useAdminApproveEvent,
+  useAdminRejectEvent
 } from "@workspace/api-client-react";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,7 +37,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import { LayoutDashboard, Users, Store, CalendarRange, Plus, Edit2, Trash2, ClipboardCheck } from "lucide-react";
+import { LayoutDashboard, Users, Store, CalendarRange, Plus, Edit2, Trash2, ClipboardCheck, CalendarDays } from "lucide-react";
 
 const vendorSchema = z.object({
   name: z.string().min(2),
@@ -62,6 +65,7 @@ export default function AdminDashboard() {
   const { data: users, refetch: refetchUsers } = useAdminListUsers({ query: { enabled: user?.role === 'admin' } });
   const { data: bookings, refetch: refetchBookings } = useAdminListBookings({ query: { enabled: user?.role === 'admin' } });
   const { data: claims, refetch: refetchClaims } = useAdminListVendorClaims({ query: { enabled: user?.role === 'admin' } });
+  const { data: adminEvents, refetch: refetchEvents } = useAdminListEvents({ query: { enabled: user?.role === 'admin' } });
   const { data: categories } = useListCategories();
 
   const updateStatus = useUpdateBookingStatus();
@@ -72,6 +76,8 @@ export default function AdminDashboard() {
   const rejectVendor = useAdminRejectVendor();
   const approveClaim = useAdminApproveVendorClaim();
   const rejectClaim = useAdminRejectVendorClaim();
+  const approveEvent = useAdminApproveEvent();
+  const rejectEvent = useAdminRejectEvent();
 
   const [isVendorModalOpen, setIsVendorModalOpen] = useState(false);
   const [editingVendorId, setEditingVendorId] = useState<number | null>(null);
@@ -252,6 +258,30 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleApproveEvent = (id: number) => {
+    approveEvent.mutate(
+      { id },
+      {
+        onSuccess: () => {
+          toast({ description: "Event approved — now visible on the site" });
+          refetchEvents();
+        }
+      }
+    );
+  };
+
+  const handleRejectEvent = (id: number) => {
+    rejectEvent.mutate(
+      { id },
+      {
+        onSuccess: () => {
+          toast({ description: "Event rejected" });
+          refetchEvents();
+        }
+      }
+    );
+  };
+
   return (
     <Layout>
       <div className="bg-slate-900 text-white py-8">
@@ -289,6 +319,7 @@ export default function AdminDashboard() {
             <TabsTrigger value="users" className="gap-2"><Users className="h-4 w-4"/> Users</TabsTrigger>
             <TabsTrigger value="bookings" className="gap-2"><CalendarRange className="h-4 w-4"/> Bookings</TabsTrigger>
             <TabsTrigger value="claims" className="gap-2"><ClipboardCheck className="h-4 w-4"/> Claims</TabsTrigger>
+            <TabsTrigger value="events" className="gap-2"><CalendarDays className="h-4 w-4"/> Events</TabsTrigger>
           </TabsList>
           
           <TabsContent value="vendors">
@@ -590,6 +621,66 @@ export default function AdminDashboard() {
                     <TableRow>
                       <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                         No claim requests yet.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="events">
+            <Card>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Event</TableHead>
+                    <TableHead>When / Where</TableHead>
+                    <TableHead>Submitted By</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Submitted</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {adminEvents?.map(e => (
+                    <TableRow key={e.id}>
+                      <TableCell className="font-medium">
+                        {e.title}
+                        <div className="text-xs text-muted-foreground">{e.category}</div>
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {format(new Date(e.eventDate), "MMM d, yyyy")}
+                        <div className="text-xs text-muted-foreground">{e.city}, {e.state}</div>
+                      </TableCell>
+                      <TableCell>
+                        <div>{e.submitterName}</div>
+                        <div className="text-xs text-muted-foreground">{e.submitterEmail}</div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={e.status === 'approved' ? 'default' : e.status === 'rejected' ? 'secondary' : 'outline'} className="capitalize">
+                          {e.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{format(new Date(e.createdAt), "MMM d, yyyy")}</TableCell>
+                      <TableCell className="text-right">
+                        {e.status === 'pending' && (
+                          <>
+                            <Button size="sm" onClick={() => handleApproveEvent(e.id)} disabled={approveEvent.isPending}>
+                              Approve
+                            </Button>
+                            <Button size="sm" variant="outline" className="ml-2" onClick={() => handleRejectEvent(e.id)} disabled={rejectEvent.isPending}>
+                              Reject
+                            </Button>
+                          </>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {adminEvents?.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                        No events submitted yet.
                       </TableCell>
                     </TableRow>
                   )}
