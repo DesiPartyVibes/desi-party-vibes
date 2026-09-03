@@ -561,3 +561,119 @@ export type AdminRejectVendor200 = {
   isRejected: boolean;
 };
 
+export type EventStatus = typeof EventStatus[keyof typeof EventStatus];
+
+
+export const EventStatus = {
+  pending: 'pending',
+  approved: 'approved',
+  rejected: 'rejected',
+} as const;
+
+export interface Event {
+  id: number;
+  title: string;
+  description: string;
+  category: string;
+  city: string;
+  state: string;
+  /** @nullable */
+  venue?: string | null;
+  eventDate: string;
+  /** @nullable */
+  endDate?: string | null;
+  /** @nullable */
+  imageUrl?: string | null;
+  /** @nullable */
+  ticketUrl?: string | null;
+  /** @nullable */
+  vendorId?: number | null;
+  /** @nullable */
+  vendorName?: string | null;
+  status: EventStatus;
+  createdAt: string;
+  /** @nullable */
+  reviewedAt?: string | null;
+}
+
+export interface ListEventsResponse {
+  events: Event[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export interface EventInput {
+  title: string;
+  description: string;
+  category: string;
+  city: string;
+  state: string;
+  venue?: string;
+  eventDate: string;
+  endDate?: string;
+  imageUrl?: string;
+  ticketUrl?: string;
+  vendorId?: number;
+}
+
+export interface AdminEvent {
+  id: number;
+  title: string;
+  description: string;
+  category: string;
+  city: string;
+  state: string;
+  /** @nullable */
+  venue?: string | null;
+  eventDate: string;
+  /** @nullable */
+  endDate?: string | null;
+  /** @nullable */
+  imageUrl?: string | null;
+  /** @nullable */
+  ticketUrl?: string | null;
+  /** @nullable */
+  vendorId?: number | null;
+  /** @nullable */
+  vendorName?: string | null;
+  status: EventStatus;
+  createdAt: string;
+  /** @nullable */
+  reviewedAt?: string | null;
+  submittedByUserId: number;
+  submitterName: string;
+  submitterEmail: string;
+}
+
+export type ListEventsParams = {
+/**
+ * @nullable
+ */
+category?: string | null;
+/**
+ * @nullable
+ */
+city?: string | null;
+/**
+ * @nullable
+ */
+state?: string | null;
+/**
+ * @nullable
+ */
+search?: string | null;
+/**
+ * @nullable
+ */
+upcoming?: boolean | null;
+/**
+ * @nullable
+ */
+page?: number | null;
+/**
+ * @nullable
+ */
+limit?: number | null;
+};
+
