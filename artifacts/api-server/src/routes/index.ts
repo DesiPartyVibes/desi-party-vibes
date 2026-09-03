@@ -12,6 +12,7 @@ import statsRouter from "./stats";
 import adminRouter from "./admin";
 import vendorClaimsRouter from "./vendor-claims";
 import supportRouter from "./support";
+import eventsRouter from "./events";
 
 const router: IRouter = Router();
 
@@ -28,5 +29,6 @@ router.use("/stats", statsRouter);
 router.use("/admin", adminRouter);
 router.use("/vendor-claims", vendorClaimsRouter);
 router.use("/support", supportRouter);
+router.use("/events", eventsRouter);
 
 export default router;

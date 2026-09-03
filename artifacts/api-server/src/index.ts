@@ -67,6 +67,35 @@ async function ensureSchema() {
   } catch (err) {
     logger.error({ err }, "Failed to ensure session-metadata columns exist");
   }
+
+  // New table for the Events feature: vendors submit events for admin
+  // review, and approved events show publicly. CREATE TABLE IF NOT EXISTS
+  // is idempotent, same defensive boot-time pattern used for the additive
+  // columns above, so this is safe to run on every startup.
+  try {
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS events (
+        id serial PRIMARY KEY,
+        title text NOT NULL,
+        description text NOT NULL,
+        category text NOT NULL,
+        city text NOT NULL,
+        state text NOT NULL,
+        venue text,
+        event_date timestamptz NOT NULL,
+        end_date timestamptz,
+        image_url text,
+        ticket_url text,
+        vendor_id integer,
+        submitted_by_user_id integer NOT NULL,
+        status text NOT NULL DEFAULT 'pending',
+        created_at timestamptz NOT NULL DEFAULT now(),
+        reviewed_at timestamptz
+      )
+    `);
+  } catch (err) {
+    logger.error({ err }, "Failed to ensure events table exists");
+  }
 }
 
 await ensureSchema();

@@ -5,14 +5,16 @@ import {
   useListFeaturedVendors, 
   useListCategories,
   useListCities,
-  useGetCurrentUser
+  useGetCurrentUser,
+  useListUpcomingEvents
 } from "@workspace/api-client-react";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { VendorCard } from "@/components/ui/vendor-card";
+import { EventCard } from "@/components/ui/event-card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, MapPin, Sparkles, Building2, Users } from "lucide-react";
+import { Search, MapPin, Sparkles, Building2, Users, CalendarDays } from "lucide-react";
 
 export default function Home() {
   const [search, setSearch] = useState("");
@@ -23,6 +25,7 @@ export default function Home() {
   const { data: categories, isLoading: categoriesLoading } = useListCategories();
   const { data: cities } = useListCities();
   const { data: user } = useGetCurrentUser();
+  const { data: upcomingEvents, isLoading: eventsLoading } = useListUpcomingEvents();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -137,6 +140,41 @@ export default function Home() {
           </Button>
         </div>
       </section>
+
+      {/* Upcoming Events */}
+      {(eventsLoading || (upcomingEvents && upcomingEvents.length > 0)) && (
+        <section className="py-20 bg-background">
+          <div className="container mx-auto px-4">
+            <div className="flex justify-between items-end mb-10">
+              <div>
+                <h2 className="text-3xl font-serif font-bold text-foreground mb-3 flex items-center gap-3">
+                  <CalendarDays className="h-7 w-7 text-primary" /> Events Around the US
+                </h2>
+                <p className="text-muted-foreground max-w-xl">Diwali melas, community gatherings, concerts, and more happening near you and nationwide.</p>
+              </div>
+              <Button variant="outline" asChild className="hidden md:flex">
+                <Link href="/events">View All</Link>
+              </Button>
+            </div>
+
+            {eventsLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                {[1,2,3,4].map(i => <Skeleton key={i} className="h-[380px] rounded-xl" />)}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                {upcomingEvents?.map((event) => (
+                  <EventCard key={event.id} event={event} />
+                ))}
+              </div>
+            )}
+
+            <Button variant="outline" asChild className="w-full mt-6 md:hidden">
+              <Link href="/events">View All Events</Link>
+            </Button>
+          </div>
+        </section>
+      )}
 
       {/* Featured Vendors */}
       <section className="py-20 bg-muted/30">

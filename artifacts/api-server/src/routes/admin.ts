@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { vendorsTable, usersTable, bookingsTable, reviewsTable, categoriesTable, vendorClaimsTable } from "@workspace/db";
+import { vendorsTable, usersTable, bookingsTable, reviewsTable, categoriesTable, vendorClaimsTable, eventsTable } from "@workspace/db";
 import { eq, and, sql, desc, inArray } from "drizzle-orm";
 import { getSessionUser } from "../lib/auth.js";
 import { sendEmail } from "../lib/email.js";
@@ -348,6 +348,151 @@ router.patch("/vendor-claims/:id/reject", async (req, res): Promise<void> => {
   }
 
   res.json(formatClaim(updated, vendor?.name ?? "", claimUser?.name ?? "", claimUser?.email ?? ""));
+});
+
+function formatAdminEvent(
+  e: typeof eventsTable.$inferSelect,
+  vendorName: string | null,
+  submitterName: string,
+  submitterEmail: string
+) {
+  return {
+    id: e.id,
+    title: e.title,
+    description: e.description,
+    category: e.category,
+    city: e.city,
+    state: e.state,
+    venue: e.venue,
+    eventDate: e.eventDate.toISOString(),
+    endDate: e.endDate ? e.endDate.toISOString() : null,
+    imageUrl: e.imageUrl,
+    ticketUrl: e.ticketUrl,
+    vendorId: e.vendorId,
+    vendorName,
+    submittedByUserId: e.submittedByUserId,
+    submitterName,
+    submitterEmail,
+    status: e.status,
+    createdAt: e.createdAt.toISOString(),
+    reviewedAt: e.reviewedAt ? e.reviewedAt.toISOString() : null,
+  };
+}
+
+router.get("/events", async (req, res): Promise<void> => {
+  if (!(await requireAdmin(req, res))) return;
+
+  const events = await db.select().from(eventsTable).orderBy(desc(eventsTable.createdAt));
+
+  const vendorIds = [...new Set(events.map((e) => e.vendorId).filter((id): id is number => id != null))];
+  const userIds = [...new Set(events.map((e) => e.submittedByUserId))];
+
+  const vendors = vendorIds.length > 0
+    ? await db.select().from(vendorsTable).where(inArray(vendorsTable.id, vendorIds))
+    : [];
+  const users = userIds.length > 0
+    ? await db.select().from(usersTable).where(inArray(usersTable.id, userIds))
+    : [];
+
+  const vendorMap: Record<number, string> = {};
+  for (const v of vendors) vendorMap[v.id] = v.name;
+  const userMap: Record<number, { name: string; email: string }> = {};
+  for (const u of users) userMap[u.id] = { name: u.name, email: u.email };
+
+  res.json(
+    events.map((e) =>
+      formatAdminEvent(
+        e,
+        e.vendorId != null ? vendorMap[e.vendorId] ?? null : null,
+        userMap[e.submittedByUserId]?.name ?? "",
+        userMap[e.submittedByUserId]?.email ?? ""
+      )
+    )
+  );
+});
+
+router.patch("/events/:id/approve", async (req, res): Promise<void> => {
+  if (!(await requireAdmin(req, res))) return;
+
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) {
+    res.status(400).json({ error: "Invalid ID" });
+    return;
+  }
+
+  const [event] = await db.select().from(eventsTable).where(eq(eventsTable.id, id)).limit(1);
+  if (!event) {
+    res.status(404).json({ error: "Event not found" });
+    return;
+  }
+  if (event.status !== "pending") {
+    res.status(400).json({ error: "This event has already been reviewed" });
+    return;
+  }
+
+  const [updated] = await db
+    .update(eventsTable)
+    .set({ status: "approved", reviewedAt: new Date() })
+    .where(eq(eventsTable.id, id))
+    .returning();
+
+  const [vendor] = updated.vendorId
+    ? await db.select().from(vendorsTable).where(eq(vendorsTable.id, updated.vendorId)).limit(1)
+    : [undefined];
+  const [submitter] = await db.select().from(usersTable).where(eq(usersTable.id, updated.submittedByUserId)).limit(1);
+
+  if (submitter && submitter.emailNotifications) {
+    // Fire-and-forget: let the vendor know their event is now live on the site.
+    sendEmail(
+      submitter.email,
+      "Your event has been approved",
+      `<p>Hi ${submitter.firstName || submitter.name},</p><p>Your event <strong>${updated.title}</strong> has been approved and is now live on <a href="https://www.desipartyvibes.com/events">Desi Party Vibes Events</a>.</p><p>— The DesiPartyVibes Team</p>`
+    ).catch((err) => logger.error({ err, eventId: updated.id }, "Failed to send event approval email"));
+  }
+
+  res.json(formatAdminEvent(updated, vendor?.name ?? null, submitter?.name ?? "", submitter?.email ?? ""));
+});
+
+router.patch("/events/:id/reject", async (req, res): Promise<void> => {
+  if (!(await requireAdmin(req, res))) return;
+
+  const id = parseInt(req.params.id);
+  if (isNaN(id)) {
+    res.status(400).json({ error: "Invalid ID" });
+    return;
+  }
+
+  const [event] = await db.select().from(eventsTable).where(eq(eventsTable.id, id)).limit(1);
+  if (!event) {
+    res.status(404).json({ error: "Event not found" });
+    return;
+  }
+  if (event.status !== "pending") {
+    res.status(400).json({ error: "This event has already been reviewed" });
+    return;
+  }
+
+  const [updated] = await db
+    .update(eventsTable)
+    .set({ status: "rejected", reviewedAt: new Date() })
+    .where(eq(eventsTable.id, id))
+    .returning();
+
+  const [vendor] = updated.vendorId
+    ? await db.select().from(vendorsTable).where(eq(vendorsTable.id, updated.vendorId)).limit(1)
+    : [undefined];
+  const [submitter] = await db.select().from(usersTable).where(eq(usersTable.id, updated.submittedByUserId)).limit(1);
+
+  if (submitter && submitter.emailNotifications) {
+    // Fire-and-forget: let the vendor know their event submission wasn't approved.
+    sendEmail(
+      submitter.email,
+      "Your event submission was not approved",
+      `<p>Hi ${submitter.firstName || submitter.name},</p><p>Your event <strong>${updated.title}</strong> was not approved for listing on Desi Party Vibes. If you believe this was a mistake or have questions, please reach out to our support team.</p><p>— The DesiPartyVibes Team</p>`
+    ).catch((err) => logger.error({ err, eventId: updated.id }, "Failed to send event rejection email"));
+  }
+
+  res.json(formatAdminEvent(updated, vendor?.name ?? null, submitter?.name ?? "", submitter?.email ?? ""));
 });
 
 export default router;
