@@ -13,6 +13,8 @@ import Register from "@/pages/register";
 import Categories from "@/pages/categories";
 import Vendors from "@/pages/vendors";
 import VendorDetail from "@/pages/vendor-detail";
+import Events from "@/pages/events";
+import EventDetail from "@/pages/event-detail";
 import Profile from "@/pages/profile";
 import Favorites from "@/pages/favorites";
 import Checklist from "@/pages/checklist";
@@ -64,6 +66,8 @@ function Router() {
       <Route path="/categories" component={Categories} />
       <Route path="/vendors" component={Vendors} />
       <Route path="/vendors/:id" component={VendorDetail} />
+      <Route path="/events" component={Events} />
+      <Route path="/events/:id" component={EventDetail} />
       <Route path="/profile" component={Profile} />
       <Route path="/favorites" component={Favorites} />
       <Route path="/checklist" component={Checklist} />
