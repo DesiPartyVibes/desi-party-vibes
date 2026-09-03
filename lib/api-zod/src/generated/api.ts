@@ -1009,3 +1009,110 @@ export const GetAdminStatsResponse = zod.object({
 })
 
 
+
+/**
+ * @summary List approved events with optional filters
+ */
+export const ListEventsQueryParams = zod.object({
+  "category": zod.coerce.string().nullish(),
+  "city": zod.coerce.string().nullish(),
+  "state": zod.coerce.string().nullish(),
+  "search": zod.coerce.string().nullish(),
+  "upcoming": zod.coerce.boolean().nullish(),
+  "page": zod.coerce.number().nullish(),
+  "limit": zod.coerce.number().nullish()
+})
+
+export const ListEventsResponseEventsItem = zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "category": zod.string(),
+  "city": zod.string(),
+  "state": zod.string(),
+  "venue": zod.string().nullish(),
+  "eventDate": zod.string(),
+  "endDate": zod.string().nullish(),
+  "imageUrl": zod.string().nullish(),
+  "ticketUrl": zod.string().nullish(),
+  "vendorId": zod.number().nullish(),
+  "vendorName": zod.string().nullish(),
+  "status": zod.enum(['pending', 'approved', 'rejected']),
+  "createdAt": zod.string(),
+  "reviewedAt": zod.string().nullish()
+})
+export const ListEventsResponse = zod.object({
+  "events": zod.array(ListEventsResponseEventsItem),
+  "total": zod.number(),
+  "page": zod.number(),
+  "limit": zod.number()
+})
+
+
+/**
+ * @summary Submit a new event for admin review (vendor accounts only)
+ */
+export const EventInputBody = zod.object({
+  "title": zod.string(),
+  "description": zod.string(),
+  "category": zod.string(),
+  "city": zod.string(),
+  "state": zod.string(),
+  "venue": zod.string().optional(),
+  "eventDate": zod.string(),
+  "endDate": zod.string().optional(),
+  "imageUrl": zod.string().optional(),
+  "ticketUrl": zod.string().optional(),
+  "vendorId": zod.number().optional()
+})
+
+
+/**
+ * @summary A short list of the soonest approved events, for the homepage
+ */
+export const ListUpcomingEventsResponseItem = zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "category": zod.string(),
+  "city": zod.string(),
+  "state": zod.string(),
+  "venue": zod.string().nullish(),
+  "eventDate": zod.string(),
+  "endDate": zod.string().nullish(),
+  "imageUrl": zod.string().nullish(),
+  "ticketUrl": zod.string().nullish(),
+  "vendorId": zod.number().nullish(),
+  "vendorName": zod.string().nullish(),
+  "status": zod.enum(['pending', 'approved', 'rejected']),
+  "createdAt": zod.string(),
+  "reviewedAt": zod.string().nullish()
+})
+export const ListUpcomingEventsResponse = zod.array(ListUpcomingEventsResponseItem)
+
+
+/**
+ * @summary Admin list all events, any status
+ */
+export const AdminListEventsResponseItem = zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "category": zod.string(),
+  "city": zod.string(),
+  "state": zod.string(),
+  "venue": zod.string().nullish(),
+  "eventDate": zod.string(),
+  "endDate": zod.string().nullish(),
+  "imageUrl": zod.string().nullish(),
+  "ticketUrl": zod.string().nullish(),
+  "vendorId": zod.number().nullish(),
+  "vendorName": zod.string().nullish(),
+  "status": zod.enum(['pending', 'approved', 'rejected']),
+  "createdAt": zod.string(),
+  "reviewedAt": zod.string().nullish(),
+  "submittedByUserId": zod.number(),
+  "submitterName": zod.string(),
+  "submitterEmail": zod.string()
+})
+export const AdminListEventsResponse = zod.array(AdminListEventsResponseItem)
