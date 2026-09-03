@@ -38,6 +38,7 @@ export function Navbar() {
 
   const navLinks = [
     { href: "/vendors", label: "Vendors" },
+    { href: "/events", label: "Events" },
     { href: "/categories", label: "Categories" },
   ];
 
