@@ -6,15 +6,10 @@ export function Footer() {
   return (
     <footer className="bg-card border-t py-10 mt-auto">
       <div className="container mx-auto px-4">
-        <div className="flex flex-col gap-10 md:flex-row md:items-start md:justify-between">
-          <div className="flex flex-col items-center gap-3 text-center md:max-w-xs md:items-start md:text-left">
-            <Link href="/">
-              <img src="/logo-full.png" alt="Desi Party Vibes" className="h-24 w-auto" />
-            </Link>
-            <p className="text-sm text-muted-foreground">
-              Your one-stop platform for planning South Asian celebrations — find trusted vendors and everything else you need.
-            </p>
-          </div>
+        <div className="flex flex-col gap-10 md:flex-row md:items-center md:gap-16">
+          <Link href="/" className="shrink-0">
+            <img src="/logo-full.png" alt="Desi Party Vibes" className="h-36 w-auto" />
+          </Link>
 
           <div className="grid grid-cols-2 gap-x-10 gap-y-8 text-center sm:grid-cols-3 sm:gap-x-16 sm:text-left">
             <div className="flex flex-col gap-3">
