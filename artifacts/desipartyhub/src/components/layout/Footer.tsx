@@ -6,48 +6,53 @@ export function Footer() {
   return (
     <footer className="bg-card border-t py-10 mt-auto">
       <div className="container mx-auto px-4">
-        <div className="grid grid-cols-1 md:grid-cols-[auto_1fr_1fr_1fr] gap-8 items-start">
-          <div className="flex flex-col justify-start">
+        <div className="flex flex-col gap-10 md:flex-row md:items-start md:justify-between">
+          <div className="flex flex-col items-center gap-3 text-center md:max-w-xs md:items-start md:text-left">
             <Link href="/">
-              <img src="/logo-full.png" alt="Desi Party Vibes" className="h-36 w-auto" />
+              <img src="/logo-full.png" alt="Desi Party Vibes" className="h-24 w-auto" />
             </Link>
+            <p className="text-sm text-muted-foreground">
+              Your one-stop platform for planning South Asian celebrations — find trusted vendors and everything else you need.
+            </p>
           </div>
 
-          <div className="flex flex-col gap-3 md:pl-4">
-            <h3 className="font-semibold text-foreground">For Users</h3>
-            <ul className="flex flex-col gap-2 text-sm text-muted-foreground">
-              <li><Link href="/vendors" className="hover:text-primary transition-colors">Find Vendors</Link></li>
-              <li><Link href="/categories" className="hover:text-primary transition-colors">Categories</Link></li>
-              <li><Link href="/checklist" className="hover:text-primary transition-colors">Planning Checklist</Link></li>
-              <li><Link href="/budget" className="hover:text-primary transition-colors">Budget Calculator</Link></li>
-            </ul>
-          </div>
+          <div className="grid grid-cols-2 gap-x-10 gap-y-8 text-center sm:grid-cols-3 sm:gap-x-16 sm:text-left">
+            <div className="flex flex-col gap-3">
+              <h3 className="font-semibold text-foreground">For Users</h3>
+              <ul className="flex flex-col gap-2 text-sm text-muted-foreground">
+                <li><Link href="/vendors" className="hover:text-primary transition-colors">Find Vendors</Link></li>
+                <li><Link href="/categories" className="hover:text-primary transition-colors">Categories</Link></li>
+                <li><Link href="/checklist" className="hover:text-primary transition-colors">Planning Checklist</Link></li>
+                <li><Link href="/budget" className="hover:text-primary transition-colors">Budget Calculator</Link></li>
+              </ul>
+            </div>
 
-          <div className="flex flex-col gap-3 md:pl-4">
-            <h3 className="font-semibold text-foreground">For Vendors</h3>
-            <ul className="flex flex-col gap-2 text-sm text-muted-foreground">
-              <li><Link href="/register?role=vendor" className="hover:text-primary transition-colors">Join as Professional</Link></li>
-              <li><Link href="/login" className="hover:text-primary transition-colors">Vendor Login</Link></li>
-              <li><span className="cursor-not-allowed">Success Stories</span></li>
-            </ul>
-          </div>
+            <div className="flex flex-col gap-3">
+              <h3 className="font-semibold text-foreground">For Vendors</h3>
+              <ul className="flex flex-col gap-2 text-sm text-muted-foreground">
+                <li><Link href="/register?role=vendor" className="hover:text-primary transition-colors">Join as Professional</Link></li>
+                <li><Link href="/login" className="hover:text-primary transition-colors">Vendor Login</Link></li>
+                <li><span className="cursor-not-allowed">Success Stories</span></li>
+              </ul>
+            </div>
 
-          <div className="flex flex-col gap-3 md:pl-4">
-            <h3 className="font-semibold text-foreground">Connect</h3>
-            <div className="flex gap-1">
-              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary" asChild>
-                <a href="#"><Instagram className="h-5 w-5" /></a>
-              </Button>
-              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary" asChild>
-                <a href="https://www.facebook.com/profile.php?id=100067921927245" target="_blank" rel="noopener noreferrer"><Facebook className="h-5 w-5" /></a>
-              </Button>
-              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary" asChild>
-                <a href="#" aria-label="X (Twitter)">
-                  <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.742l7.732-8.835L1.254 2.25H8.08l4.253 5.622 5.911-5.622Zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-                  </svg>
-                </a>
-              </Button>
+            <div className="col-span-2 flex flex-col items-center gap-3 sm:col-span-1 sm:items-start">
+              <h3 className="font-semibold text-foreground">Connect</h3>
+              <div className="flex gap-1 sm:-ml-2">
+                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary" asChild>
+                  <a href="#"><Instagram className="h-5 w-5" /></a>
+                </Button>
+                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary" asChild>
+                  <a href="https://www.facebook.com/profile.php?id=100067921927245" target="_blank" rel="noopener noreferrer"><Facebook className="h-5 w-5" /></a>
+                </Button>
+                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary" asChild>
+                  <a href="#" aria-label="X (Twitter)">
+                    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.742l7.732-8.835L1.254 2.25H8.08l4.253 5.622 5.911-5.622Zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                    </svg>
+                  </a>
+                </Button>
+              </div>
             </div>
           </div>
         </div>
