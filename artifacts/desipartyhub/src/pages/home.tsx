@@ -40,9 +40,41 @@ export default function Home() {
     <Layout>
       {/* Hero Section */}
       <section className="relative w-full h-[600px] flex items-center justify-center overflow-hidden">
-        <div className="absolute inset-0 z-0" style={{background: "linear-gradient(135deg, #6B21A8 0%, #9A3412 20%, #EA5000 42%, #F97316 60%, #C2410C 78%, #581C87 100%)"}} />
-        <div className="absolute inset-0 z-0 opacity-25" style={{backgroundImage: "radial-gradient(circle at 15% 50%, #FCD34D 0%, transparent 45%), radial-gradient(circle at 85% 20%, #F9A8D4 0%, transparent 35%), radial-gradient(circle at 55% 85%, #A78BFA 0%, transparent 40%)"}} />
-        <div className="absolute inset-0 z-0 opacity-10" style={{backgroundImage: "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='1' fill-rule='evenodd'%3E%3Cpath d='M30 0 L32 10 L40 8 L35 16 L45 18 L36 22 L40 32 L30 28 L20 32 L24 22 L15 18 L25 16 L20 8 L28 10 Z'/%3E%3C/g%3E%3C/svg%3E\")"}} />
+        {/* Photo collage background */}
+        <div className="absolute inset-0 z-0 grid grid-cols-3 grid-rows-2 gap-1">
+          <img
+            src="https://images.pexels.com/photos/19733687/pexels-photo-19733687.jpeg?auto=compress&cs=tinysrgb&w=800"
+            alt="Indian wedding couple"
+            className="w-full h-full object-cover"
+          />
+          <img
+            src="https://images.pexels.com/photos/28589007/pexels-photo-28589007.jpeg?auto=compress&cs=tinysrgb&w=800"
+            alt="Wedding dance celebration"
+            className="w-full h-full object-cover"
+          />
+          <img
+            src="https://images.pexels.com/photos/34079355/pexels-photo-34079355.jpeg?auto=compress&cs=tinysrgb&w=800"
+            alt="Floral wedding mandap"
+            className="w-full h-full object-cover"
+          />
+          <img
+            src="https://images.pexels.com/photos/33417234/pexels-photo-33417234.jpeg?auto=compress&cs=tinysrgb&w=800"
+            alt="Outdoor wedding reception venue"
+            className="w-full h-full object-cover"
+          />
+          <img
+            src="https://images.pexels.com/photos/32315685/pexels-photo-32315685.jpeg?auto=compress&cs=tinysrgb&w=800"
+            alt="Indian wedding ceremony celebration"
+            className="w-full h-full object-cover"
+          />
+          <img
+            src="https://images.pexels.com/photos/36943221/pexels-photo-36943221.jpeg?auto=compress&cs=tinysrgb&w=800"
+            alt="Festive party decorations"
+            className="w-full h-full object-cover"
+          />
+        </div>
+        {/* Dark overlay so headline and search stay readable */}
+        <div className="absolute inset-0 z-10 bg-gradient-to-b from-black/60 via-black/45 to-black/70" />
         
         <div className="relative z-20 container mx-auto px-4 text-center text-white">
           <Badge className="bg-primary/90 text-primary-foreground hover:bg-primary border-none mb-6 text-sm py-1 px-3">
