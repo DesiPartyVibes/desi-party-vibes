@@ -3067,6 +3067,223 @@ export const useRemoveFavorite = <TError = ErrorType<unknown>,
       return useMutation(getRemoveFavoriteMutationOptions(options));
     }
 
+export const getListEventFavoritesUrl = () => {
+
+
+
+
+  return `/api/favorites/events`
+}
+
+/**
+ * @summary Get current user's favorited events
+ */
+export const listEventFavorites = async ( options?: RequestInit): Promise<Event[]> => {
+
+  return customFetch<Event[]>(getListEventFavoritesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListEventFavoritesQueryKey = () => {
+    return [
+    `/api/favorites/events`
+    ] as const;
+    }
+
+
+export const getListEventFavoritesQueryOptions = <TData = Awaited<ReturnType<typeof listEventFavorites>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listEventFavorites>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListEventFavoritesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listEventFavorites>>> = ({ signal }) => listEventFavorites({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listEventFavorites>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListEventFavoritesQueryResult = NonNullable<Awaited<ReturnType<typeof listEventFavorites>>>
+export type ListEventFavoritesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get current user's favorited events
+ */
+
+export function useListEventFavorites<TData = Awaited<ReturnType<typeof listEventFavorites>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listEventFavorites>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListEventFavoritesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getAddEventFavoriteUrl = (eventId: number,) => {
+
+
+
+
+  return `/api/favorites/events/${eventId}`
+}
+
+/**
+ * @summary Add event to favorites
+ */
+export const addEventFavorite = async (eventId: number, options?: RequestInit): Promise<MessageResponse> => {
+
+  return customFetch<MessageResponse>(getAddEventFavoriteUrl(eventId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getAddEventFavoriteMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addEventFavorite>>, TError,{eventId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof addEventFavorite>>, TError,{eventId: number}, TContext> => {
+
+const mutationKey = ['addEventFavorite'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addEventFavorite>>, {eventId: number}> = (props) => {
+          const {eventId} = props ?? {};
+
+          return  addEventFavorite(eventId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddEventFavoriteMutationResult = NonNullable<Awaited<ReturnType<typeof addEventFavorite>>>
+
+    export type AddEventFavoriteMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Add event to favorites
+ */
+export const useAddEventFavorite = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addEventFavorite>>, TError,{eventId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof addEventFavorite>>,
+        TError,
+        {eventId: number},
+        TContext
+      > => {
+      return useMutation(getAddEventFavoriteMutationOptions(options));
+    }
+
+export const getRemoveEventFavoriteUrl = (eventId: number,) => {
+
+
+
+
+  return `/api/favorites/events/${eventId}`
+}
+
+/**
+ * @summary Remove event from favorites
+ */
+export const removeEventFavorite = async (eventId: number, options?: RequestInit): Promise<MessageResponse> => {
+
+  return customFetch<MessageResponse>(getRemoveEventFavoriteUrl(eventId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getRemoveEventFavoriteMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeEventFavorite>>, TError,{eventId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof removeEventFavorite>>, TError,{eventId: number}, TContext> => {
+
+const mutationKey = ['removeEventFavorite'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeEventFavorite>>, {eventId: number}> = (props) => {
+          const {eventId} = props ?? {};
+
+          return  removeEventFavorite(eventId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RemoveEventFavoriteMutationResult = NonNullable<Awaited<ReturnType<typeof removeEventFavorite>>>
+
+    export type RemoveEventFavoriteMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Remove event from favorites
+ */
+export const useRemoveEventFavorite = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeEventFavorite>>, TError,{eventId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof removeEventFavorite>>,
+        TError,
+        {eventId: number},
+        TContext
+      > => {
+      return useMutation(getRemoveEventFavoriteMutationOptions(options));
+    }
+
 export const getListChecklistItemsUrl = () => {
 
 

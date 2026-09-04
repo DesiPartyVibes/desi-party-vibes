@@ -683,6 +683,10 @@ paths:
           in: query
           schema:
             type: string
+        - name: language
+          in: query
+          schema:
+            type: string
         - name: search
           in: query
           schema:
@@ -691,6 +695,10 @@ paths:
           in: query
           schema:
             type: boolean
+        - name: vendorId
+          in: query
+          schema:
+            type: integer
         - name: page
           in: query
           schema:
@@ -925,6 +933,58 @@ paths:
       summary: Remove vendor from favorites
       parameters:
         - name: vendorId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Removed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /favorites/events:
+    get:
+      operationId: listEventFavorites
+      tags: [favorites]
+      summary: Get current user's favorited events
+      responses:
+        "200":
+          description: Favorited events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Event"
+
+  /favorites/events/{eventId}:
+    post:
+      operationId: addEventFavorite
+      tags: [favorites]
+      summary: Add event to favorites
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "201":
+          description: Added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+    delete:
+      operationId: removeEventFavorite
+      tags: [favorites]
+      summary: Remove event from favorites
+      parameters:
+        - name: eventId
           in: path
           required: true
           schema:
@@ -2223,6 +2283,8 @@ components:
           type: string
         venue:
           type: ["string", "null"]
+        language:
+          type: ["string", "null"]
         eventDate:
           type: string
         endDate:
@@ -2230,6 +2292,8 @@ components:
         imageUrl:
           type: ["string", "null"]
         ticketUrl:
+          type: ["string", "null"]
+        additionalInfo:
           type: ["string", "null"]
         vendorId:
           type: ["integer", "null"]
@@ -2274,6 +2338,8 @@ components:
           type: string
         venue:
           type: string
+        language:
+          type: string
         eventDate:
           type: string
         endDate:
@@ -2281,6 +2347,8 @@ components:
         imageUrl:
           type: string
         ticketUrl:
+          type: string
+        additionalInfo:
           type: string
         vendorId:
           type: integer

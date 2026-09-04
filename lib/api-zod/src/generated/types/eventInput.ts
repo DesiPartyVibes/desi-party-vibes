@@ -13,9 +13,11 @@ export interface EventInput {
   city: string;
   state: string;
   venue?: string;
+  language?: string;
   eventDate: string;
   endDate?: string;
   imageUrl?: string;
   ticketUrl?: string;
+  additionalInfo?: string;
   vendorId?: number;
 }

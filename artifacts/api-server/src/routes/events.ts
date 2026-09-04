@@ -16,10 +16,12 @@ function formatEvent(e: typeof eventsTable.$inferSelect, vendorName: string | nu
     city: e.city,
     state: e.state,
     venue: e.venue,
+    language: e.language,
     eventDate: e.eventDate.toISOString(),
     endDate: e.endDate ? e.endDate.toISOString() : null,
     imageUrl: e.imageUrl,
     ticketUrl: e.ticketUrl,
+    additionalInfo: e.additionalInfo,
     vendorId: e.vendorId,
     vendorName,
     status: e.status,
@@ -46,8 +48,12 @@ router.get("/", async (req, res): Promise<void> => {
     category: z.string().optional(),
     city: z.string().optional(),
     state: z.string().optional(),
+    language: z.string().optional(),
     search: z.string().optional(),
     upcoming: z.coerce.boolean().optional(),
+    // Lets the event detail page ask "what else is this organizer running"
+    // by re-using the same public list endpoint instead of a new one.
+    vendorId: z.coerce.number().optional(),
     page: z.coerce.number().default(1),
     limit: z.coerce.number().default(12),
   });
@@ -58,13 +64,15 @@ router.get("/", async (req, res): Promise<void> => {
     return;
   }
 
-  const { category, city, state, search, upcoming, page, limit } = parsed.data;
+  const { category, city, state, language, search, upcoming, vendorId, page, limit } = parsed.data;
 
   const conditions = [eq(eventsTable.status, "approved")];
 
   if (category) conditions.push(eq(eventsTable.category, category));
   if (city) conditions.push(ilike(eventsTable.city, `%${city}%`));
   if (state) conditions.push(ilike(eventsTable.state, `%${state}%`));
+  if (language) conditions.push(eq(eventsTable.language, language));
+  if (vendorId) conditions.push(eq(eventsTable.vendorId, vendorId));
   if (upcoming) conditions.push(gte(eventsTable.eventDate, new Date()));
   if (search) {
     const term = `%${search.trim()}%`;
@@ -160,10 +168,12 @@ const eventInputSchema = z.object({
   city: z.string().min(1, "City is required"),
   state: z.string().min(1, "State is required"),
   venue: z.string().optional(),
+  language: z.string().optional(),
   eventDate: z.string().min(1, "Event date is required"),
   endDate: z.string().optional(),
   imageUrl: z.string().optional(),
   ticketUrl: z.string().optional(),
+  additionalInfo: z.string().optional(),
   vendorId: z.number().int().optional(),
 });
 
@@ -208,10 +218,12 @@ router.post("/", async (req, res): Promise<void> => {
       city: parsed.data.city,
       state: parsed.data.state,
       venue: parsed.data.venue || null,
+      language: parsed.data.language || null,
       eventDate,
       endDate: endDate ?? null,
       imageUrl: parsed.data.imageUrl || null,
       ticketUrl: parsed.data.ticketUrl || null,
+      additionalInfo: parsed.data.additionalInfo || null,
       vendorId: parsed.data.vendorId ?? null,
       submittedByUserId: user.id,
     })

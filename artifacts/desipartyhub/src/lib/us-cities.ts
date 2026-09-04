@@ -140,3 +140,26 @@ export function searchCities(query: string, limit = 7): USCity[] {
   }
   return [...starts, ...contains].slice(0, limit);
 }
+
+// A short hand-picked list of major South Asian community hubs across the
+// US, used to power "Popular Cities" quick-filter chips on the Events page
+// (the same idea as Sulekha Events' city-shortcut menu). Not meant to be
+// exhaustive - just the handful of metros most DesiPartyVibes events and
+// vendors cluster around.
+export const POPULAR_METRO_CITIES: USCity[] = [
+  { city: "New York City", state: "New York" },
+  { city: "Edison", state: "New Jersey" },
+  { city: "Jersey City", state: "New Jersey" },
+  { city: "Chicago", state: "Illinois" },
+  { city: "Houston", state: "Texas" },
+  { city: "Dallas", state: "Texas" },
+  { city: "Atlanta", state: "Georgia" },
+  { city: "San Jose", state: "California" },
+  { city: "Fremont", state: "California" },
+  { city: "Los Angeles", state: "California" },
+  { city: "Seattle", state: "Washington" },
+  { city: "Boston", state: "Massachusetts" },
+  { city: "Washington", state: "District of Columbia" },
+  { city: "Tampa", state: "Florida" },
+  { city: "Phoenix", state: "Arizona" },
+];
