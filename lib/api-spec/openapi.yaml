@@ -1451,7 +1451,7 @@ components:
     # AUTH
     UserRegisterInput:
       type: object
-      required: [firstName, lastName, email, password, phone]
+      required: [firstName, lastName, email, password, phone, agreedToTerms]
       properties:
         firstName:
           type: string
@@ -1468,6 +1468,10 @@ components:
         role:
           type: string
           enum: [user, vendor]
+        agreedToTerms:
+          type: boolean
+          description: Must be true. Confirms the user agreed to the Privacy Policy and Terms of Service.
+          enum: [true]
 
     UserLoginInput:
       type: object
