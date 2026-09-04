@@ -15,4 +15,6 @@ export interface UserRegisterInput {
   phone: string;
   address?: string;
   role?: UserRegisterInputRole;
+  /** Must be true. Confirms the user agreed to the Privacy Policy and Terms of Service. */
+  agreedToTerms: true;
 }
