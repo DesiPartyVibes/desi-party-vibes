@@ -32,6 +32,7 @@ import {
 import { Store, Search, Clock, Plus, Pencil, Inbox, CalendarDays, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { EVENT_CATEGORIES } from "@/lib/event-categories";
+import { EVENT_LANGUAGES } from "@/lib/event-languages";
 import { CitySuggestInput } from "@/components/ui/city-suggest-input";
 
 const registerSchema = z.object({
@@ -76,10 +77,12 @@ const eventFormSchema = z.object({
   city: z.string().min(1, "City is required"),
   state: z.string().min(1, "State is required"),
   venue: z.string().optional(),
+  language: z.string().optional(),
   eventDate: z.string().min(1, "Event date is required"),
   endDate: z.string().optional(),
   imageUrl: z.string().optional(),
   ticketUrl: z.string().url("Enter a valid URL").optional().or(z.literal("")),
+  additionalInfo: z.string().optional(),
   attachToBusiness: z.boolean().optional(),
 });
 
@@ -345,10 +348,12 @@ export default function VendorDashboard() {
       city: "",
       state: "",
       venue: "",
+      language: "",
       eventDate: "",
       endDate: "",
       imageUrl: "",
       ticketUrl: "",
+      additionalInfo: "",
       attachToBusiness: false,
     },
   });
@@ -361,17 +366,19 @@ export default function VendorDashboard() {
       city: myVendor?.city || "",
       state: myVendor?.state || "",
       venue: "",
+      language: "",
       eventDate: "",
       endDate: "",
       imageUrl: "",
       ticketUrl: "",
+      additionalInfo: "",
       attachToBusiness: false,
     });
     setIsEventDialogOpen(true);
   };
 
   const onEventSubmit = (values: EventFormValues) => {
-    const { attachToBusiness, ticketUrl, venue, endDate, ...rest } = values;
+    const { attachToBusiness, ticketUrl, venue, endDate, language, additionalInfo, ...rest } = values;
     createEvent.mutate(
       {
         data: {
@@ -379,6 +386,8 @@ export default function VendorDashboard() {
           venue: venue || undefined,
           endDate: endDate || undefined,
           ticketUrl: ticketUrl || undefined,
+          language: language || undefined,
+          additionalInfo: additionalInfo || undefined,
           vendorId: attachToBusiness && approvedClaim ? approvedClaim.vendorId : undefined,
         } as any,
       },
@@ -759,6 +768,22 @@ export default function VendorDashboard() {
                 <FormItem><FormLabel>Venue <span className="text-xs text-muted-foreground font-normal">(optional)</span></FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
               )}
             />
+            <FormField
+              control={eventForm.control}
+              name="language"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Language <span className="text-xs text-muted-foreground font-normal">(optional)</span></FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value || undefined}>
+                    <FormControl><SelectTrigger><SelectValue placeholder="Choose a language" /></SelectTrigger></FormControl>
+                    <SelectContent>
+                      {EVENT_LANGUAGES.map((l) => <SelectItem key={l} value={l}>{l}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={eventForm.control}
@@ -781,6 +806,19 @@ export default function VendorDashboard() {
               name="description"
               render={({ field }) => (
                 <FormItem><FormLabel>Description</FormLabel><FormControl><Textarea rows={3} {...field} /></FormControl><FormMessage /></FormItem>
+              )}
+            />
+            <FormField
+              control={eventForm.control}
+              name="additionalInfo"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Good to Know <span className="text-xs text-muted-foreground font-normal">(optional)</span></FormLabel>
+                  <FormControl>
+                    <Textarea rows={2} placeholder="Doors open time, parking, dress code, age restrictions..." {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
             />
             <FormField

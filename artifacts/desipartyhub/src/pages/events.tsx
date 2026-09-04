@@ -8,19 +8,23 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
-import { SlidersHorizontal } from "lucide-react";
+import { Search, SlidersHorizontal } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { EVENT_CATEGORIES } from "@/lib/event-categories";
+import { EVENT_LANGUAGES } from "@/lib/event-languages";
 import { CitySuggestInput } from "@/components/ui/city-suggest-input";
+import { POPULAR_METRO_CITIES } from "@/lib/us-cities";
 
 interface FilterContentProps {
   category: string;
   city: string;
   state: string;
+  language: string;
   upcomingOnly: boolean;
   onCategoryChange: (v: string) => void;
   onCityChange: (v: string) => void;
   onStateChange: (v: string) => void;
+  onLanguageChange: (v: string) => void;
   onUpcomingChange: (v: boolean) => void;
   onClear: () => void;
 }
@@ -29,10 +33,12 @@ function FilterContent({
   category,
   city,
   state,
+  language,
   upcomingOnly,
   onCategoryChange,
   onCityChange,
   onStateChange,
+  onLanguageChange,
   onUpcomingChange,
   onClear,
 }: FilterContentProps) {
@@ -48,6 +54,21 @@ function FilterContent({
             <SelectItem value="all">All Categories</SelectItem>
             {EVENT_CATEGORIES.map((c) => (
               <SelectItem key={c} value={c}>{c}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Language</Label>
+        <Select value={language} onValueChange={onLanguageChange}>
+          <SelectTrigger>
+            <SelectValue placeholder="All Languages" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Languages</SelectItem>
+            {EVENT_LANGUAGES.map((l) => (
+              <SelectItem key={l} value={l}>{l}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -88,36 +109,49 @@ function FilterContent({
 export default function Events() {
   const searchParams = new URLSearchParams(window.location.search);
 
+  const [search, setSearch] = useState(searchParams.get("search") || "");
   const [category, setCategory] = useState(searchParams.get("category") || "all");
   const [city, setCity] = useState(searchParams.get("city") || "");
   const [state, setState] = useState(searchParams.get("state") || "");
+  const [language, setLanguage] = useState(searchParams.get("language") || "all");
   const [upcomingOnly, setUpcomingOnly] = useState(true);
 
   const eventParams = {
     limit: 100,
     upcoming: upcomingOnly,
+    ...(search ? { search } : {}),
     ...(category && category !== "all" ? { category } : {}),
     ...(city ? { city } : {}),
     ...(state ? { state } : {}),
+    ...(language && language !== "all" ? { language } : {}),
   };
 
   const { data: eventData, isLoading } = useListEvents(eventParams);
 
   const handleClear = () => {
+    setSearch("");
     setCategory("all");
     setCity("");
     setState("");
+    setLanguage("all");
     setUpcomingOnly(true);
+  };
+
+  const handlePickCity = (pickedCity: string, pickedState: string) => {
+    setCity(pickedCity);
+    setState(pickedState);
   };
 
   const filterProps: FilterContentProps = {
     category,
     city,
     state,
+    language,
     upcomingOnly,
     onCategoryChange: setCategory,
     onCityChange: setCity,
     onStateChange: setState,
+    onLanguageChange: setLanguage,
     onUpcomingChange: setUpcomingOnly,
     onClear: handleClear,
   };
@@ -127,9 +161,43 @@ export default function Events() {
       <div className="bg-muted/30 py-8 border-b">
         <div className="container mx-auto px-4">
           <h1 className="font-serif text-3xl font-bold mb-2 text-foreground">Events Around the US</h1>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground mb-5">
             Diwali melas, community gatherings, concerts, and more from South Asian communities nationwide.
           </p>
+
+          {/* Top search bar - the fastest path to "find me something"; the
+              category/language/city/state filters live in the sidebar below
+              for people who want to narrow things down further. */}
+          <div className="relative max-w-xl">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+            <Input
+              placeholder="Search events by name or keyword..."
+              className="pl-9 bg-background"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              autoComplete="off"
+            />
+          </div>
+
+          {/* Popular Cities quick-filter chips - one click to jump straight
+              to events in a major metro, same idea as Sulekha's city menu. */}
+          <div className="flex flex-wrap gap-2 mt-4">
+            <span className="text-xs font-medium text-muted-foreground self-center mr-1">Popular:</span>
+            {POPULAR_METRO_CITIES.slice(0, 8).map((c) => (
+              <button
+                key={`${c.city}-${c.state}`}
+                type="button"
+                onClick={() => handlePickCity(c.city, c.state)}
+                className={`text-xs px-3 py-1 rounded-full border transition-colors ${
+                  city === c.city
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-background border-border text-muted-foreground hover:border-primary/40 hover:text-primary"
+                }`}
+              >
+                {c.city}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 

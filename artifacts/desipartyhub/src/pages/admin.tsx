@@ -645,9 +645,16 @@ export default function AdminDashboard() {
                 <TableBody>
                   {adminEvents?.map(e => (
                     <TableRow key={e.id}>
-                      <TableCell className="font-medium">
+                      <TableCell className="font-medium max-w-xs">
                         {e.title}
-                        <div className="text-xs text-muted-foreground">{e.category}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {e.category}{e.language ? ` · ${e.language}` : ""}
+                        </div>
+                        {e.additionalInfo && (
+                          <div className="text-xs text-muted-foreground/80 italic line-clamp-2 mt-0.5">
+                            {e.additionalInfo}
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell className="text-sm">
                         {format(new Date(e.eventDate), "MMM d, yyyy")}
