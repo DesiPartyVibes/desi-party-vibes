@@ -5,16 +5,18 @@ import {
   useAddEventFavorite,
   useRemoveEventFavorite,
   useListEventFavorites,
+  useListMyVendorClaims,
 } from "@workspace/api-client-react";
 import { Layout } from "@/components/layout/Layout";
 import { EventCard } from "@/components/ui/event-card";
+import { EventFormDialog } from "@/components/events/event-form-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
-import { Search, SlidersHorizontal } from "lucide-react";
+import { Search, SlidersHorizontal, Plus } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useToast } from "@/hooks/use-toast";
 import { EVENT_CATEGORIES } from "@/lib/event-categories";
@@ -130,6 +132,25 @@ export default function Events() {
   const removeEventFavorite = useRemoveEventFavorite();
   const favoriteEventIds = new Set(eventFavorites?.map((e) => e.id) || []);
 
+  // If the signed-in user is a vendor with an approved listing, the create
+  // dialog offers the same "this event is hosted by <business>" option the
+  // vendor dashboard has - fetched only for that case, same as there.
+  const { data: claims } = useListMyVendorClaims({ query: { enabled: user?.role === "vendor" } });
+  const approvedClaim = claims?.find((c) => c.status === "approved");
+
+  const [isEventDialogOpen, setIsEventDialogOpen] = useState(false);
+
+  const openSubmitDialog = () => {
+    if (!user) {
+      toast({
+        title: "Sign in required",
+        description: "Please sign in to submit an event.",
+      });
+      return;
+    }
+    setIsEventDialogOpen(true);
+  };
+
   const handleToggleFavorite = (eventId: number) => {
     if (!user) {
       toast({
@@ -206,10 +227,17 @@ export default function Events() {
     <Layout>
       <div className="bg-muted/30 py-8 border-b">
         <div className="container mx-auto px-4">
-          <h1 className="font-serif text-3xl font-bold mb-2 text-foreground">Events Around the US</h1>
-          <p className="text-muted-foreground mb-5">
-            Diwali melas, community gatherings, concerts, and more from South Asian communities nationwide.
-          </p>
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-2">
+            <div>
+              <h1 className="font-serif text-3xl font-bold mb-2 text-foreground">Events Around the US</h1>
+              <p className="text-muted-foreground">
+                Diwali melas, community gatherings, concerts, and more from South Asian communities nationwide.
+              </p>
+            </div>
+            <Button onClick={openSubmitDialog} className="gap-1.5 shrink-0">
+              <Plus className="h-4 w-4" /> Submit Event
+            </Button>
+          </div>
 
           {/* Top search bar - the fastest path to "find me something"; the
               category/language/city/state filters live in the sidebar below
@@ -311,6 +339,12 @@ export default function Events() {
           </div>
         </div>
       </div>
+
+      <EventFormDialog
+        open={isEventDialogOpen}
+        onOpenChange={setIsEventDialogOpen}
+        vendorClaim={approvedClaim ? { vendorId: approvedClaim.vendorId, vendorName: approvedClaim.vendorName } : null}
+      />
     </Layout>
   );
 }
