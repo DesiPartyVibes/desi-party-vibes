@@ -579,6 +579,8 @@ export interface Event {
   state: string;
   /** @nullable */
   venue?: string | null;
+  /** @nullable */
+  language?: string | null;
   eventDate: string;
   /** @nullable */
   endDate?: string | null;
@@ -586,6 +588,8 @@ export interface Event {
   imageUrl?: string | null;
   /** @nullable */
   ticketUrl?: string | null;
+  /** @nullable */
+  additionalInfo?: string | null;
   /** @nullable */
   vendorId?: number | null;
   /** @nullable */
@@ -610,10 +614,12 @@ export interface EventInput {
   city: string;
   state: string;
   venue?: string;
+  language?: string;
   eventDate: string;
   endDate?: string;
   imageUrl?: string;
   ticketUrl?: string;
+  additionalInfo?: string;
   vendorId?: number;
 }
 
@@ -626,6 +632,8 @@ export interface AdminEvent {
   state: string;
   /** @nullable */
   venue?: string | null;
+  /** @nullable */
+  language?: string | null;
   eventDate: string;
   /** @nullable */
   endDate?: string | null;
@@ -633,6 +641,8 @@ export interface AdminEvent {
   imageUrl?: string | null;
   /** @nullable */
   ticketUrl?: string | null;
+  /** @nullable */
+  additionalInfo?: string | null;
   /** @nullable */
   vendorId?: number | null;
   /** @nullable */
@@ -662,11 +672,19 @@ state?: string | null;
 /**
  * @nullable
  */
+language?: string | null;
+/**
+ * @nullable
+ */
 search?: string | null;
 /**
  * @nullable
  */
 upcoming?: boolean | null;
+/**
+ * @nullable
+ */
+vendorId?: number | null;
 /**
  * @nullable
  */
