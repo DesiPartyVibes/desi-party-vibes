@@ -16,6 +16,8 @@ export interface Event {
   state: string;
   /** @nullable */
   venue?: string | null;
+  /** @nullable */
+  language?: string | null;
   eventDate: string;
   /** @nullable */
   endDate?: string | null;
@@ -23,6 +25,8 @@ export interface Event {
   imageUrl?: string | null;
   /** @nullable */
   ticketUrl?: string | null;
+  /** @nullable */
+  additionalInfo?: string | null;
   /** @nullable */
   vendorId?: number | null;
   /** @nullable */

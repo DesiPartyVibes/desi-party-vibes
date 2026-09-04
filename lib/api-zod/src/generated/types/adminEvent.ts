@@ -16,6 +16,8 @@ export interface AdminEvent {
   state: string;
   /** @nullable */
   venue?: string | null;
+  /** @nullable */
+  language?: string | null;
   eventDate: string;
   /** @nullable */
   endDate?: string | null;
@@ -23,6 +25,8 @@ export interface AdminEvent {
   imageUrl?: string | null;
   /** @nullable */
   ticketUrl?: string | null;
+  /** @nullable */
+  additionalInfo?: string | null;
   /** @nullable */
   vendorId?: number | null;
   /** @nullable */
