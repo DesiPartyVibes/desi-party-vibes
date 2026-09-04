@@ -25,6 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { User, Store, Loader2, ChevronDown, Check, Eye, EyeOff, Mail, ArrowLeft } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -115,9 +116,13 @@ const formSchema = z.object({
   state: z.string().optional(),
   zip: z.string().optional(),
   role: z.enum(["user", "vendor"], { required_error: "Please select an account type." }),
+  agreedToTerms: z.boolean(),
 }).refine((d) => d.password === d.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
+}).refine((d) => d.agreedToTerms === true, {
+  message: "You must agree to the Privacy Policy and Terms of Service to continue.",
+  path: ["agreedToTerms"],
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -156,6 +161,7 @@ export default function Register() {
       state: "",
       zip: "",
       role: roleParam === "vendor" ? "vendor" : "user",
+      agreedToTerms: false,
     },
   });
 
@@ -171,7 +177,7 @@ export default function Register() {
   }
 
   function onSubmit(values: FormValues) {
-    const { streetAddress, unit, city, state, zip, confirmPassword: _cp, ...rest } = values;
+    const { streetAddress, unit, city, state, zip, confirmPassword: _cp, agreedToTerms: _agreed, ...rest } = values;
     const addressParts = [streetAddress, unit, city, state, zip].filter(Boolean);
     const address = addressParts.length > 0 ? addressParts.join(", ") : undefined;
     const phone = buildFullPhone(values.phone);
@@ -493,6 +499,31 @@ export default function Register() {
                             </div>
                           </FormControl>
                           <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="agreedToTerms"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-2 space-y-0">
+                          <FormControl>
+                            <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel className="font-normal">
+                              I agree to the{" "}
+                              <Link href="/privacy" target="_blank" className="text-primary hover:underline">
+                                Privacy Policy
+                              </Link>{" "}
+                              and{" "}
+                              <Link href="/terms" target="_blank" className="text-primary hover:underline">
+                                Terms of Service
+                              </Link>
+                            </FormLabel>
+                            <FormMessage />
+                          </div>
                         </FormItem>
                       )}
                     />

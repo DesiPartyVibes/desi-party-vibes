@@ -122,6 +122,11 @@ const registerSchema = z.object({
   phone: z.string().min(7),
   address: z.string().optional(),
   role: z.enum(["user", "vendor"]).default("user"),
+  // Enforced server-side too, not just as a UI gate, so the requirement
+  // can't be bypassed by calling the API directly.
+  agreedToTerms: z.literal(true, {
+    errorMap: () => ({ message: "You must agree to the Privacy Policy and Terms of Service" }),
+  }),
 });
 
 const loginSchema = z.object({
