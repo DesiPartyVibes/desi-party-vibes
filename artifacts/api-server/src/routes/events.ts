@@ -177,17 +177,18 @@ const eventInputSchema = z.object({
   vendorId: z.number().int().optional(),
 });
 
-// Only vendor accounts can submit events, and only once their vendor
-// account itself has been approved by an admin - same gate used before a
-// vendor can create a business listing. Every submission starts pending
-// regardless of who submits it.
+// Any signed-in account - customer or vendor - can submit an event; a
+// vendor submission is only blocked while their vendor account itself is
+// still pending admin approval (same gate used before a vendor can create
+// a business listing). Every submission starts pending regardless of who
+// submits it.
 router.post("/", async (req, res): Promise<void> => {
   const user = await getSessionUser(req);
-  if (!user || user.role !== "vendor") {
-    res.status(403).json({ error: "Only vendor accounts can submit events" });
+  if (!user) {
+    res.status(401).json({ error: "Please sign in to submit an event" });
     return;
   }
-  if (!user.isVerified) {
+  if (user.role === "vendor" && !user.isVerified) {
     res.status(403).json({ error: "Your vendor account is pending admin approval" });
     return;
   }

@@ -12,7 +12,6 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import {
   useGetCurrentUser,
@@ -26,14 +25,12 @@ import {
   useListVendorBookings,
   useUpdateBookingStatus,
   useListMyEvents,
-  useCreateEvent,
   useDeleteEvent,
 } from "@workspace/api-client-react";
 import { Store, Search, Clock, Plus, Pencil, Inbox, CalendarDays, Trash2 } from "lucide-react";
 import { format } from "date-fns";
-import { EVENT_CATEGORIES } from "@/lib/event-categories";
-import { EVENT_LANGUAGES } from "@/lib/event-languages";
-import { CitySuggestInput } from "@/components/ui/city-suggest-input";
+import { PhotoField } from "@/components/ui/photo-field";
+import { EventFormDialog } from "@/components/events/event-form-dialog";
 
 const registerSchema = z.object({
   name: z.string().min(2, "Business name is required"),
@@ -70,139 +67,11 @@ const editSchema = z.object({
 
 type EditValues = z.infer<typeof editSchema>;
 
-const eventFormSchema = z.object({
-  title: z.string().min(3, "Give the event a title"),
-  description: z.string().min(10, "Add a short description (10+ characters)"),
-  category: z.string().min(1, "Please choose a category"),
-  city: z.string().min(1, "City is required"),
-  state: z.string().min(1, "State is required"),
-  venue: z.string().optional(),
-  language: z.string().optional(),
-  eventDate: z.string().min(1, "Event date is required"),
-  endDate: z.string().optional(),
-  imageUrl: z.string().optional(),
-  ticketUrl: z.string().url("Enter a valid URL").optional().or(z.literal("")),
-  additionalInfo: z.string().optional(),
-  attachToBusiness: z.boolean().optional(),
-});
-
-type EventFormValues = z.infer<typeof eventFormSchema>;
-
 const eventStatusVariants: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
   pending: "outline",
   approved: "default",
   rejected: "destructive",
 };
-
-// Resizes/compresses an uploaded image client-side and returns it as a JPEG
-// data URL, so vendors can upload a photo directly instead of hosting it
-// somewhere else and pasting a link. There's no object-storage service wired
-// up in this app, and the vendors.image_url column is a plain text field, so
-// a compressed data URL is the simplest path that needs no new backend work.
-async function processImageFile(file: File): Promise<string> {
-  const rawDataUrl: string = await new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = () => reject(new Error("Couldn't read that file."));
-    reader.readAsDataURL(file);
-  });
-
-  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-    const el = new Image();
-    el.onload = () => resolve(el);
-    el.onerror = () => reject(new Error("Couldn't decode that image."));
-    el.src = rawDataUrl;
-  });
-
-  const maxDim = 1200;
-  const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.max(1, Math.round(img.width * scale));
-  canvas.height = Math.max(1, Math.round(img.height * scale));
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("Image processing isn't supported in this browser.");
-  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-  return canvas.toDataURL("image/jpeg", 0.82);
-}
-
-// Shared photo field for the register/edit forms: lets a vendor upload a
-// photo (resized+compressed client-side into the imageUrl field) or fall
-// back to pasting a URL directly.
-function PhotoField({ control }: { control: any }) {
-  const [mode, setMode] = useState<"upload" | "url">("upload");
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  return (
-    <FormField
-      control={control}
-      name="imageUrl"
-      render={({ field }) => (
-        <FormItem>
-          <FormLabel>Photo</FormLabel>
-          {mode === "upload" ? (
-            <div className="space-y-2">
-              <FormControl>
-                <Input
-                  type="file"
-                  accept="image/*"
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    e.target.value = "";
-                    if (!file) return;
-                    setError(null);
-                    if (!file.type.startsWith("image/")) {
-                      setError("Please choose an image file.");
-                      return;
-                    }
-                    if (file.size > 8 * 1024 * 1024) {
-                      setError("Image is too large (max 8MB).");
-                      return;
-                    }
-                    setIsProcessing(true);
-                    try {
-                      field.onChange(await processImageFile(file));
-                    } catch (err: any) {
-                      setError(err?.message || "Couldn't process that image. Try a different file.");
-                    } finally {
-                      setIsProcessing(false);
-                    }
-                  }}
-                />
-              </FormControl>
-              {isProcessing && <p className="text-xs text-muted-foreground">Processing image...</p>}
-              {error && <p className="text-xs text-destructive">{error}</p>}
-              {field.value && !isProcessing && (
-                <img src={field.value} alt="Preview" className="h-24 w-24 rounded-md object-cover border" />
-              )}
-              <button
-                type="button"
-                className="text-xs text-muted-foreground underline underline-offset-2"
-                onClick={() => setMode("url")}
-              >
-                Or paste an image URL instead
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              <FormControl>
-                <Input placeholder="https://..." {...field} />
-              </FormControl>
-              <button
-                type="button"
-                className="text-xs text-muted-foreground underline underline-offset-2"
-                onClick={() => setMode("upload")}
-              >
-                Or upload a photo instead
-              </button>
-            </div>
-          )}
-          <FormMessage />
-        </FormItem>
-      )}
-    />
-  );
-}
 
 const bookingStatusLabels: Record<string, string> = {
   pending: "New Request",
@@ -335,78 +204,9 @@ export default function VendorDashboard() {
   const { data: myEvents, refetch: refetchEvents } = useListMyEvents({
     query: { enabled: !!user?.isVerified },
   });
-  const createEvent = useCreateEvent();
   const deleteEvent = useDeleteEvent();
 
   const [isEventDialogOpen, setIsEventDialogOpen] = useState(false);
-  const eventForm = useForm<EventFormValues>({
-    resolver: zodResolver(eventFormSchema),
-    defaultValues: {
-      title: "",
-      description: "",
-      category: "",
-      city: "",
-      state: "",
-      venue: "",
-      language: "",
-      eventDate: "",
-      endDate: "",
-      imageUrl: "",
-      ticketUrl: "",
-      additionalInfo: "",
-      attachToBusiness: false,
-    },
-  });
-
-  const openEventDialog = () => {
-    eventForm.reset({
-      title: "",
-      description: "",
-      category: "",
-      city: myVendor?.city || "",
-      state: myVendor?.state || "",
-      venue: "",
-      language: "",
-      eventDate: "",
-      endDate: "",
-      imageUrl: "",
-      ticketUrl: "",
-      additionalInfo: "",
-      attachToBusiness: false,
-    });
-    setIsEventDialogOpen(true);
-  };
-
-  const onEventSubmit = (values: EventFormValues) => {
-    const { attachToBusiness, ticketUrl, venue, endDate, language, additionalInfo, ...rest } = values;
-    createEvent.mutate(
-      {
-        data: {
-          ...rest,
-          venue: venue || undefined,
-          endDate: endDate || undefined,
-          ticketUrl: ticketUrl || undefined,
-          language: language || undefined,
-          additionalInfo: additionalInfo || undefined,
-          vendorId: attachToBusiness && approvedClaim ? approvedClaim.vendorId : undefined,
-        } as any,
-      },
-      {
-        onSuccess: () => {
-          toast({ description: "Event submitted — an admin will review it shortly." });
-          setIsEventDialogOpen(false);
-          refetchEvents();
-        },
-        onError: (err: any) => {
-          toast({
-            variant: "destructive",
-            title: "Couldn't submit event",
-            description: err?.data?.error || "Please check the form and try again.",
-          });
-        },
-      }
-    );
-  };
 
   const handleDeleteEvent = (eventId: number) => {
     deleteEvent.mutate(
@@ -699,159 +499,14 @@ export default function VendorDashboard() {
   );
 
   const eventDialog = (
-    <Dialog open={isEventDialogOpen} onOpenChange={setIsEventDialogOpen}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Submit an Event</DialogTitle>
-        </DialogHeader>
-        <p className="text-sm text-muted-foreground -mt-2">
-          Submitted events are reviewed by an admin before they appear publicly.
-        </p>
-        <Form {...eventForm}>
-          <form onSubmit={eventForm.handleSubmit(onEventSubmit)} className="space-y-4 pt-2">
-            <FormField
-              control={eventForm.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem><FormLabel>Event Title</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-              )}
-            />
-            <FormField
-              control={eventForm.control}
-              name="category"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Category</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value || undefined}>
-                    <FormControl><SelectTrigger><SelectValue placeholder="Choose a category" /></SelectTrigger></FormControl>
-                    <SelectContent>
-                      {EVENT_CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={eventForm.control}
-                name="city"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>City</FormLabel>
-                    <FormControl>
-                      <CitySuggestInput
-                        value={field.value}
-                        onChange={field.onChange}
-                        onCitySelect={(selectedCity, selectedState) => {
-                          eventForm.setValue("city", selectedCity, { shouldValidate: true });
-                          eventForm.setValue("state", selectedState, { shouldValidate: true });
-                        }}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={eventForm.control}
-                name="state"
-                render={({ field }) => (
-                  <FormItem><FormLabel>State</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                )}
-              />
-            </div>
-            <FormField
-              control={eventForm.control}
-              name="venue"
-              render={({ field }) => (
-                <FormItem><FormLabel>Venue <span className="text-xs text-muted-foreground font-normal">(optional)</span></FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-              )}
-            />
-            <FormField
-              control={eventForm.control}
-              name="language"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Language <span className="text-xs text-muted-foreground font-normal">(optional)</span></FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value || undefined}>
-                    <FormControl><SelectTrigger><SelectValue placeholder="Choose a language" /></SelectTrigger></FormControl>
-                    <SelectContent>
-                      {EVENT_LANGUAGES.map((l) => <SelectItem key={l} value={l}>{l}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={eventForm.control}
-                name="eventDate"
-                render={({ field }) => (
-                  <FormItem><FormLabel>Starts</FormLabel><FormControl><Input type="datetime-local" {...field} /></FormControl><FormMessage /></FormItem>
-                )}
-              />
-              <FormField
-                control={eventForm.control}
-                name="endDate"
-                render={({ field }) => (
-                  <FormItem><FormLabel>Ends <span className="text-xs text-muted-foreground font-normal">(optional)</span></FormLabel><FormControl><Input type="datetime-local" {...field} /></FormControl><FormMessage /></FormItem>
-                )}
-              />
-            </div>
-            <PhotoField control={eventForm.control} />
-            <FormField
-              control={eventForm.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem><FormLabel>Description</FormLabel><FormControl><Textarea rows={3} {...field} /></FormControl><FormMessage /></FormItem>
-              )}
-            />
-            <FormField
-              control={eventForm.control}
-              name="additionalInfo"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Good to Know <span className="text-xs text-muted-foreground font-normal">(optional)</span></FormLabel>
-                  <FormControl>
-                    <Textarea rows={2} placeholder="Doors open time, parking, dress code, age restrictions..." {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={eventForm.control}
-              name="ticketUrl"
-              render={({ field }) => (
-                <FormItem><FormLabel>Tickets / More Info Link <span className="text-xs text-muted-foreground font-normal">(optional)</span></FormLabel><FormControl><Input placeholder="https://..." {...field} /></FormControl><FormMessage /></FormItem>
-              )}
-            />
-            {approvedClaim && (
-              <FormField
-                control={eventForm.control}
-                name="attachToBusiness"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-start space-x-2 space-y-0">
-                    <FormControl>
-                      <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                    </FormControl>
-                    <FormLabel className="font-normal">
-                      This event is hosted by {approvedClaim.vendorName}
-                    </FormLabel>
-                  </FormItem>
-                )}
-              />
-            )}
-
-            <Button type="submit" className="w-full" disabled={createEvent.isPending}>
-              {createEvent.isPending ? "Submitting..." : "Submit for Review"}
-            </Button>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
+    <EventFormDialog
+      open={isEventDialogOpen}
+      onOpenChange={setIsEventDialogOpen}
+      onSubmitted={refetchEvents}
+      defaultCity={myVendor?.city}
+      defaultState={myVendor?.state}
+      vendorClaim={approvedClaim ? { vendorId: approvedClaim.vendorId, vendorName: approvedClaim.vendorName } : null}
+    />
   );
 
   return (
@@ -1034,7 +689,7 @@ export default function VendorDashboard() {
                 <CalendarDays className="h-4 w-4 text-muted-foreground" />
                 <CardTitle className="text-base">Your Events</CardTitle>
               </div>
-              <Button size="sm" onClick={openEventDialog} className="gap-1.5">
+              <Button size="sm" onClick={() => setIsEventDialogOpen(true)} className="gap-1.5">
                 <Plus className="h-3.5 w-3.5" /> Submit Event
               </Button>
             </CardHeader>
