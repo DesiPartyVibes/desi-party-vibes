@@ -683,6 +683,10 @@ paths:
           in: query
           schema:
             type: string
+        - name: language
+          in: query
+          schema:
+            type: string
         - name: search
           in: query
           schema:
@@ -691,6 +695,10 @@ paths:
           in: query
           schema:
             type: boolean
+        - name: vendorId
+          in: query
+          schema:
+            type: integer
         - name: page
           in: query
           schema:
@@ -2223,6 +2231,8 @@ components:
           type: string
         venue:
           type: ["string", "null"]
+        language:
+          type: ["string", "null"]
         eventDate:
           type: string
         endDate:
@@ -2230,6 +2240,8 @@ components:
         imageUrl:
           type: ["string", "null"]
         ticketUrl:
+          type: ["string", "null"]
+        additionalInfo:
           type: ["string", "null"]
         vendorId:
           type: ["integer", "null"]
@@ -2274,6 +2286,8 @@ components:
           type: string
         venue:
           type: string
+        language:
+          type: string
         eventDate:
           type: string
         endDate:
@@ -2281,6 +2295,8 @@ components:
         imageUrl:
           type: string
         ticketUrl:
+          type: string
+        additionalInfo:
           type: string
         vendorId:
           type: integer
