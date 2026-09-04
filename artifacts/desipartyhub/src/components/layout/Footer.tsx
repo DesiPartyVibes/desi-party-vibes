@@ -52,8 +52,12 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-8 pt-6 border-t text-center text-sm text-muted-foreground">
-          &copy; {new Date().getFullYear()} Desi Party Vibes. All rights reserved.
+        <div className="mt-8 pt-6 border-t flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 text-center text-sm text-muted-foreground">
+          <span>&copy; {new Date().getFullYear()} Desi Party Vibes. All rights reserved.</span>
+          <span className="flex items-center gap-4">
+            <Link href="/privacy" className="hover:text-primary transition-colors">Privacy Policy</Link>
+            <Link href="/terms" className="hover:text-primary transition-colors">Terms of Service</Link>
+          </span>
         </div>
       </div>
     </footer>
