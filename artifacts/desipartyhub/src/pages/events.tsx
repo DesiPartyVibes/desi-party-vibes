@@ -11,6 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { SlidersHorizontal } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { EVENT_CATEGORIES } from "@/lib/event-categories";
+import { CitySuggestInput } from "@/components/ui/city-suggest-input";
 
 interface FilterContentProps {
   category: string;
@@ -54,7 +55,15 @@ function FilterContent({
 
       <div className="space-y-2">
         <Label>City</Label>
-        <Input placeholder="Any city" value={city} onChange={(e) => onCityChange(e.target.value)} />
+        <CitySuggestInput
+          value={city}
+          onChange={onCityChange}
+          onCitySelect={(selectedCity, selectedState) => {
+            onCityChange(selectedCity);
+            onStateChange(selectedState);
+          }}
+          placeholder="Any city"
+        />
       </div>
 
       <div className="space-y-2">

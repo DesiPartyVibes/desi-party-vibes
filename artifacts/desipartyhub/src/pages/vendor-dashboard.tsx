@@ -32,6 +32,7 @@ import {
 import { Store, Search, Clock, Plus, Pencil, Inbox, CalendarDays, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { EVENT_CATEGORIES } from "@/lib/event-categories";
+import { CitySuggestInput } from "@/components/ui/city-suggest-input";
 
 const registerSchema = z.object({
   name: z.string().min(2, "Business name is required"),
@@ -727,7 +728,20 @@ export default function VendorDashboard() {
                 control={eventForm.control}
                 name="city"
                 render={({ field }) => (
-                  <FormItem><FormLabel>City</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                  <FormItem>
+                    <FormLabel>City</FormLabel>
+                    <FormControl>
+                      <CitySuggestInput
+                        value={field.value}
+                        onChange={field.onChange}
+                        onCitySelect={(selectedCity, selectedState) => {
+                          eventForm.setValue("city", selectedCity, { shouldValidate: true });
+                          eventForm.setValue("state", selectedState, { shouldValidate: true });
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}
               />
               <FormField
