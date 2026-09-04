@@ -3,13 +3,15 @@ import { Event } from "@workspace/api-client-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CalendarDays, MapPin, Share2, Sparkles } from "lucide-react";
+import { CalendarDays, MapPin, Share2, Sparkles, Heart } from "lucide-react";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 
 interface EventCardProps {
   event: Event;
+  isFavorite?: boolean;
+  onToggleFavorite?: (id: number) => void;
 }
 
 // An event is "Just Listed" for a few days after it's approved and goes
@@ -17,7 +19,7 @@ interface EventCardProps {
 // urgency badges Sulekha Events shows, using the createdAt we already have.
 const JUST_LISTED_WINDOW_MS = 5 * 24 * 60 * 60 * 1000;
 
-export function EventCard({ event }: EventCardProps) {
+export function EventCard({ event, isFavorite = false, onToggleFavorite }: EventCardProps) {
   const date = new Date(event.eventDate);
   const { toast } = useToast();
   const isJustListed = Date.now() - new Date(event.createdAt).getTime() < JUST_LISTED_WINDOW_MS;
@@ -77,6 +79,22 @@ export function EventCard({ event }: EventCardProps) {
           >
             <Share2 className="h-3.5 w-3.5" />
           </Button>
+          {onToggleFavorite && (
+            <Button
+              type="button"
+              size="icon"
+              variant="secondary"
+              className="absolute bottom-3 left-3 h-8 w-8 rounded-full opacity-90 hover:opacity-100"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onToggleFavorite(event.id);
+              }}
+              aria-label={isFavorite ? "Remove from favorites" : "Save to favorites"}
+            >
+              <Heart className={`h-3.5 w-3.5 ${isFavorite ? "fill-red-500 text-red-500" : ""}`} />
+            </Button>
+          )}
         </div>
         <CardContent className="p-5">
           <div className="flex items-center gap-2 mb-2 flex-wrap">
