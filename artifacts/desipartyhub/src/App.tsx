@@ -24,6 +24,8 @@ import AdminDashboard from "@/pages/admin";
 import VendorDashboard from "@/pages/vendor-dashboard";
 import ForgotPassword from "@/pages/forgot-password";
 import VerifyEmail from "@/pages/verify-email";
+import Privacy from "@/pages/privacy";
+import Terms from "@/pages/terms";
 
 // A 401/403 means "not logged in" / "not allowed" — retrying won't change
 // that, it just delays the UI from settling (e.g. showing Login/Sign up
@@ -63,6 +65,8 @@ function Router() {
       <Route path="/register" component={Register} />
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/verify-email" component={VerifyEmail} />
+      <Route path="/privacy" component={Privacy} />
+      <Route path="/terms" component={Terms} />
       <Route path="/categories" component={Categories} />
       <Route path="/vendors" component={Vendors} />
       <Route path="/vendors/:id" component={VendorDetail} />
