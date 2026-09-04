@@ -1,12 +1,19 @@
 import { useRoute, Link } from "wouter";
-import { useGetEvent, useListEvents } from "@workspace/api-client-react";
+import {
+  useGetEvent,
+  useListEvents,
+  useGetCurrentUser,
+  useAddEventFavorite,
+  useRemoveEventFavorite,
+  useListEventFavorites,
+} from "@workspace/api-client-react";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
-import { CalendarDays, MapPin, Ticket, ArrowLeft, Store, Languages, Share2, Info } from "lucide-react";
+import { CalendarDays, MapPin, Ticket, ArrowLeft, Store, Languages, Share2, Info, Heart } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { EventCard } from "@/components/ui/event-card";
@@ -16,6 +23,7 @@ export default function EventDetail() {
   const id = parseInt(params?.id || "0");
   const { data: event, isLoading } = useGetEvent(id, { query: { enabled: !!id } });
   const { toast } = useToast();
+  const { data: user } = useGetCurrentUser();
 
   // "More events from this organizer" - re-uses the public list endpoint
   // with the vendorId filter, same pattern as Sulekha's organizer page
@@ -25,6 +33,40 @@ export default function EventDetail() {
     { query: { enabled: !!event?.vendorId } }
   );
   const otherEvents = (moreFromOrganizer?.events ?? []).filter((e) => e.id !== event?.id);
+
+  const { data: eventFavorites, refetch: refetchEventFavorites } = useListEventFavorites({ query: { enabled: !!user } });
+  const addEventFavorite = useAddEventFavorite();
+  const removeEventFavorite = useRemoveEventFavorite();
+  const isFavorite = eventFavorites?.some((f) => f.id === id) || false;
+
+  const handleToggleFavorite = () => {
+    if (!user) {
+      toast({ title: "Sign in required", description: "Please sign in to save favorite events." });
+      return;
+    }
+
+    if (isFavorite) {
+      removeEventFavorite.mutate(
+        { eventId: id },
+        {
+          onSuccess: () => {
+            refetchEventFavorites();
+            toast({ description: "Removed from favorites" });
+          },
+        }
+      );
+    } else {
+      addEventFavorite.mutate(
+        { eventId: id },
+        {
+          onSuccess: () => {
+            refetchEventFavorites();
+            toast({ description: "Added to favorites" });
+          },
+        }
+      );
+    }
+  };
 
   const handleShare = async () => {
     if (!event) return;
@@ -91,9 +133,14 @@ export default function EventDetail() {
 
                 <div className="flex items-start justify-between gap-4">
                   <h1 className="font-serif text-3xl font-bold">{event.title}</h1>
-                  <Button variant="outline" size="icon" className="shrink-0" onClick={handleShare} aria-label="Share this event">
-                    <Share2 className="h-4 w-4" />
-                  </Button>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Button variant="outline" size="icon" onClick={handleToggleFavorite} aria-label={isFavorite ? "Remove from favorites" : "Save to favorites"}>
+                      <Heart className={`h-4 w-4 ${isFavorite ? "fill-red-500 text-red-500" : ""}`} />
+                    </Button>
+                    <Button variant="outline" size="icon" onClick={handleShare} aria-label="Share this event">
+                      <Share2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
 
                 {/* Structured "Event Details" block, similar to how Sulekha
@@ -159,7 +206,28 @@ export default function EventDetail() {
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   {otherEvents.slice(0, 4).map((e) => (
-                    <EventCard key={e.id} event={e} />
+                    <EventCard
+                      key={e.id}
+                      event={e}
+                      isFavorite={eventFavorites?.some((f) => f.id === e.id) || false}
+                      onToggleFavorite={() => {
+                        if (!user) {
+                          toast({ title: "Sign in required", description: "Please sign in to save favorite events." });
+                          return;
+                        }
+                        const alreadyFav = eventFavorites?.some((f) => f.id === e.id) || false;
+                        const mutation = alreadyFav ? removeEventFavorite : addEventFavorite;
+                        mutation.mutate(
+                          { eventId: e.id },
+                          {
+                            onSuccess: () => {
+                              refetchEventFavorites();
+                              toast({ description: alreadyFav ? "Removed from favorites" : "Added to favorites" });
+                            },
+                          }
+                        );
+                      }}
+                    />
                   ))}
                 </div>
               </div>

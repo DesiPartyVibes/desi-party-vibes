@@ -1,5 +1,11 @@
 import { useState } from "react";
-import { useListEvents } from "@workspace/api-client-react";
+import {
+  useListEvents,
+  useGetCurrentUser,
+  useAddEventFavorite,
+  useRemoveEventFavorite,
+  useListEventFavorites,
+} from "@workspace/api-client-react";
 import { Layout } from "@/components/layout/Layout";
 import { EventCard } from "@/components/ui/event-card";
 import { Button } from "@/components/ui/button";
@@ -10,6 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Search, SlidersHorizontal } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { useToast } from "@/hooks/use-toast";
 import { EVENT_CATEGORIES } from "@/lib/event-categories";
 import { EVENT_LANGUAGES } from "@/lib/event-languages";
 import { CitySuggestInput } from "@/components/ui/city-suggest-input";
@@ -115,6 +122,45 @@ export default function Events() {
   const [state, setState] = useState(searchParams.get("state") || "");
   const [language, setLanguage] = useState(searchParams.get("language") || "all");
   const [upcomingOnly, setUpcomingOnly] = useState(true);
+
+  const { toast } = useToast();
+  const { data: user } = useGetCurrentUser();
+  const { data: eventFavorites, refetch: refetchEventFavorites } = useListEventFavorites({ query: { enabled: !!user } });
+  const addEventFavorite = useAddEventFavorite();
+  const removeEventFavorite = useRemoveEventFavorite();
+  const favoriteEventIds = new Set(eventFavorites?.map((e) => e.id) || []);
+
+  const handleToggleFavorite = (eventId: number) => {
+    if (!user) {
+      toast({
+        title: "Sign in required",
+        description: "Please sign in to save favorite events.",
+      });
+      return;
+    }
+
+    if (favoriteEventIds.has(eventId)) {
+      removeEventFavorite.mutate(
+        { eventId },
+        {
+          onSuccess: () => {
+            refetchEventFavorites();
+            toast({ description: "Removed from favorites" });
+          },
+        }
+      );
+    } else {
+      addEventFavorite.mutate(
+        { eventId },
+        {
+          onSuccess: () => {
+            refetchEventFavorites();
+            toast({ description: "Added to favorites" });
+          },
+        }
+      );
+    }
+  };
 
   const eventParams = {
     limit: 100,
@@ -253,7 +299,12 @@ export default function Events() {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {eventData?.events.map((event) => (
-                  <EventCard key={event.id} event={event} />
+                  <EventCard
+                    key={event.id}
+                    event={event}
+                    isFavorite={favoriteEventIds.has(event.id)}
+                    onToggleFavorite={handleToggleFavorite}
+                  />
                 ))}
               </div>
             )}

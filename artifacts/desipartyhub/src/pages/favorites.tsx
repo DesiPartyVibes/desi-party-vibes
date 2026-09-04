@@ -1,9 +1,16 @@
 import { useLocation } from "wouter";
-import { useListFavorites, useGetCurrentUser, useRemoveFavorite } from "@workspace/api-client-react";
+import {
+  useListFavorites,
+  useGetCurrentUser,
+  useRemoveFavorite,
+  useListEventFavorites,
+  useRemoveEventFavorite,
+} from "@workspace/api-client-react";
 import { Layout } from "@/components/layout/Layout";
 import { VendorCard } from "@/components/ui/vendor-card";
+import { EventCard } from "@/components/ui/event-card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Heart } from "lucide-react";
+import { Heart, CalendarDays } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Favorites() {
@@ -13,6 +20,10 @@ export default function Favorites() {
     query: { enabled: !!user } 
   });
   const removeFavorite = useRemoveFavorite();
+  const { data: eventFavorites, isLoading: eventFavoritesLoading, refetch: refetchEventFavorites } = useListEventFavorites({
+    query: { enabled: !!user },
+  });
+  const removeEventFavorite = useRemoveEventFavorite();
   const { toast } = useToast();
 
   if (!userLoading && !user) {
@@ -26,6 +37,18 @@ export default function Favorites() {
       {
         onSuccess: () => {
           refetch();
+          toast({ description: "Removed from favorites" });
+        }
+      }
+    );
+  };
+
+  const handleRemoveEventFavorite = (eventId: number) => {
+    removeEventFavorite.mutate(
+      { eventId },
+      {
+        onSuccess: () => {
+          refetchEventFavorites();
           toast({ description: "Removed from favorites" });
         }
       }
@@ -67,6 +90,37 @@ export default function Favorites() {
                 vendor={vendor} 
                 isFavorite={true}
                 onToggleFavorite={handleRemoveFavorite}
+              />
+            ))}
+          </div>
+        )}
+
+        <div className="flex items-center gap-3 mt-16 mb-2">
+          <CalendarDays className="h-7 w-7 text-primary" />
+          <h2 className="font-serif text-2xl font-bold text-foreground">Saved Events</h2>
+        </div>
+        <p className="text-muted-foreground mb-8">Events you've bookmarked to revisit later.</p>
+
+        {eventFavoritesLoading || userLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {[...Array(4)].map((_, i) => (
+              <Skeleton key={`ev-${i}`} className="h-[400px] rounded-xl" />
+            ))}
+          </div>
+        ) : eventFavorites?.length === 0 ? (
+          <div className="text-center py-20 bg-muted/10 rounded-2xl border border-dashed">
+            <CalendarDays className="h-16 w-16 text-muted mx-auto mb-4" />
+            <h3 className="text-2xl font-serif font-bold mb-2">No saved events yet</h3>
+            <p className="text-muted-foreground mb-6">Browse Events and save the ones you don't want to miss.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {eventFavorites?.map((event) => (
+              <EventCard
+                key={event.id}
+                event={event}
+                isFavorite={true}
+                onToggleFavorite={handleRemoveEventFavorite}
               />
             ))}
           </div>
