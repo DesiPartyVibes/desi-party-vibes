@@ -96,6 +96,20 @@ async function ensureSchema() {
   } catch (err) {
     logger.error({ err }, "Failed to ensure events table exists");
   }
+
+  // Favorites: let a saved favorite point at either a vendor or an event.
+  // vendor_id used to be the only target and was NOT NULL; existing rows
+  // already have it populated so dropping that constraint is safe. The new
+  // unique index mirrors the vendor one so a user can't double-favorite the
+  // same event, while still allowing any number of NULL event_id rows
+  // (Postgres treats NULLs as distinct) for existing vendor favorites.
+  try {
+    await db.execute(sql`ALTER TABLE favorites ALTER COLUMN vendor_id DROP NOT NULL`);
+    await db.execute(sql`ALTER TABLE favorites ADD COLUMN IF NOT EXISTS event_id integer`);
+    await db.execute(sql`CREATE UNIQUE INDEX IF NOT EXISTS favorites_user_id_event_id_unique ON favorites (user_id, event_id)`);
+  } catch (err) {
+    logger.error({ err }, "Failed to ensure favorites.event_id column exists");
+  }
 }
 
 await ensureSchema();
