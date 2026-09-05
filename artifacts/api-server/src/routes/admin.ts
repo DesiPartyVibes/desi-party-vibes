@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { vendorsTable, usersTable, bookingsTable, reviewsTable, categoriesTable, vendorClaimsTable, eventsTable } from "@workspace/db";
 import { eq, and, sql, desc, inArray } from "drizzle-orm";
+import { z } from "zod";
 import { getSessionUser } from "../lib/auth.js";
 import { sendEmail } from "../lib/email.js";
 import { logger } from "../lib/logger.js";
@@ -378,6 +379,8 @@ function formatAdminEvent(
     status: e.status,
     createdAt: e.createdAt.toISOString(),
     reviewedAt: e.reviewedAt ? e.reviewedAt.toISOString() : null,
+    source: e.source,
+    sourceUrl: e.sourceUrl,
   };
 }
 
@@ -495,6 +498,83 @@ router.patch("/events/:id/reject", async (req, res): Promise<void> => {
   }
 
   res.json(formatAdminEvent(updated, vendor?.name ?? null, submitter?.name ?? "", submitter?.email ?? ""));
+});
+
+const curatedEventInputSchema = z.object({
+  title: z.string().min(3),
+  description: z.string().min(10),
+  category: z.string().min(1),
+  city: z.string().min(1),
+  state: z.string().min(1),
+  venue: z.string().optional(),
+  language: z.string().optional(),
+  eventDate: z.string().min(1),
+  endDate: z.string().optional(),
+  imageUrl: z.string().optional(),
+  // Curated events exist specifically to send people out to buy tickets
+  // elsewhere, so this is required here (unlike the public submit form).
+  ticketUrl: z.string().min(1, "A ticket/info link is required for curated events"),
+  additionalInfo: z.string().optional(),
+  // Where this listing's info came from - required for attribution and so
+  // a refresh job can find/update/retire the row later.
+  sourceUrl: z.string().min(1, "A source URL is required for curated events"),
+});
+
+// Lets an admin (or an automated import/refresh job authenticated as an
+// admin) add a real-world event directly, pre-approved - skipping the
+// pending queue that applies to user/vendor submissions. These are tagged
+// source: "admin_curated" so they're distinguishable in the admin panel
+// and so a later refresh pass can find and update/retire just these rows
+// without touching anything a real user submitted.
+router.post("/events/curated", async (req, res): Promise<void> => {
+  const user = await getSessionUser(req);
+  if (!user || user.role !== "admin") {
+    res.status(403).json({ error: "Admin access required" });
+    return;
+  }
+
+  const parsed = curatedEventInputSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.issues[0]?.message || "Invalid input" });
+    return;
+  }
+
+  const eventDate = new Date(parsed.data.eventDate);
+  if (isNaN(eventDate.getTime())) {
+    res.status(400).json({ error: "Invalid event date" });
+    return;
+  }
+  const endDate = parsed.data.endDate ? new Date(parsed.data.endDate) : undefined;
+  if (endDate && isNaN(endDate.getTime())) {
+    res.status(400).json({ error: "Invalid end date" });
+    return;
+  }
+
+  const [event] = await db
+    .insert(eventsTable)
+    .values({
+      title: parsed.data.title,
+      description: parsed.data.description,
+      category: parsed.data.category,
+      city: parsed.data.city,
+      state: parsed.data.state,
+      venue: parsed.data.venue || null,
+      language: parsed.data.language || null,
+      eventDate,
+      endDate: endDate ?? null,
+      imageUrl: parsed.data.imageUrl || null,
+      ticketUrl: parsed.data.ticketUrl,
+      additionalInfo: parsed.data.additionalInfo || null,
+      vendorId: null,
+      submittedByUserId: user.id,
+      status: "approved",
+      reviewedAt: new Date(),
+      source: "admin_curated",
+      sourceUrl: parsed.data.sourceUrl,
+    })
+    .returning();
+
+  res.status(201).json(formatAdminEvent(event, null, user.name ?? "", user.email ?? ""));
 });
 
 export default router;

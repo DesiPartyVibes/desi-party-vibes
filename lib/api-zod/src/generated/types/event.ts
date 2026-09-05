@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { EventStatus } from './eventStatus';
+import type { EventSource } from './eventSource';
 
 export interface Event {
   id: number;
@@ -35,4 +36,5 @@ export interface Event {
   createdAt: string;
   /** @nullable */
   reviewedAt?: string | null;
+  source: EventSource;
 }
