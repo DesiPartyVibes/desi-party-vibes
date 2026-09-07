@@ -52,6 +52,12 @@ router.get("/", async (req, res): Promise<void> => {
     language: z.string().optional(),
     search: z.string().optional(),
     upcoming: z.coerce.boolean().optional(),
+    // Date-range filter ("look for events in a particular time period") -
+    // plain YYYY-MM-DD strings from a <input type="date">, interpreted as
+    // the start/end of that calendar day on the server. Independent of
+    // `upcoming`, which the frontend turns off once a custom range is set.
+    dateFrom: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "dateFrom must be YYYY-MM-DD").optional(),
+    dateTo: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "dateTo must be YYYY-MM-DD").optional(),
     // Lets the event detail page ask "what else is this organizer running"
     // by re-using the same public list endpoint instead of a new one.
     vendorId: z.coerce.number().optional(),
@@ -65,7 +71,7 @@ router.get("/", async (req, res): Promise<void> => {
     return;
   }
 
-  const { category, city, state, language, search, upcoming, vendorId, page, limit } = parsed.data;
+  const { category, city, state, language, search, upcoming, dateFrom, dateTo, vendorId, page, limit } = parsed.data;
 
   const conditions = [eq(eventsTable.status, "approved")];
 
@@ -75,6 +81,8 @@ router.get("/", async (req, res): Promise<void> => {
   if (language) conditions.push(eq(eventsTable.language, language));
   if (vendorId) conditions.push(eq(eventsTable.vendorId, vendorId));
   if (upcoming) conditions.push(gte(eventsTable.eventDate, new Date()));
+  if (dateFrom) conditions.push(gte(eventsTable.eventDate, new Date(`${dateFrom}T00:00:00`)));
+  if (dateTo) conditions.push(lte(eventsTable.eventDate, new Date(`${dateTo}T23:59:59.999`)));
   if (search) {
     const term = `%${search.trim()}%`;
     conditions.push(or(ilike(eventsTable.title, term), ilike(eventsTable.description, term))!);
