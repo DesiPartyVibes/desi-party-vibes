@@ -14,19 +14,29 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
-import { Search, SlidersHorizontal, Plus, CalendarRange } from "lucide-react";
+import { Search, SlidersHorizontal, Plus, CalendarRange, CalendarIcon } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 import { EVENT_CATEGORIES } from "@/lib/event-categories";
 import { EVENT_LANGUAGES } from "@/lib/event-languages";
 import { CitySuggestInput } from "@/components/ui/city-suggest-input";
 import { POPULAR_METRO_CITIES } from "@/lib/us-cities";
 import { format, addDays, endOfMonth, nextSaturday, nextSunday, isSaturday, isSunday } from "date-fns";
 
-// yyyy-MM-dd, what a native <input type="date"> and the API both expect.
+// yyyy-MM-dd, what the API expects and what the calendar picker's buttons show.
 const toDateParam = (d: Date) => format(d, "yyyy-MM-dd");
+
+// Parses back into a local-time Date (not UTC, unlike date-fns' parseISO) so
+// the calendar highlights the right day regardless of timezone.
+const parseDateParam = (s: string) => {
+  const [y, m, d] = s.split("-").map(Number);
+  return new Date(y, m - 1, d);
+};
 
 // "Look for events in a particular time period" quick picks, so people
 // don't have to know exact dates - same idea as the Popular Cities chips.
@@ -147,24 +157,62 @@ function FilterContent({
         </div>
         <div className="grid grid-cols-2 gap-2 pt-1">
           <div className="space-y-1">
-            <Label htmlFor="date-from" className="text-xs font-normal text-muted-foreground">From</Label>
-            <Input
-              id="date-from"
-              type="date"
-              value={dateFrom}
-              max={dateTo || undefined}
-              onChange={(e) => onDateFromChange(e.target.value)}
-            />
+            <Label className="text-xs font-normal text-muted-foreground">From</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start px-2.5 text-left text-sm font-normal",
+                    !dateFrom && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-1.5 h-3.5 w-3.5 shrink-0" />
+                  <span className="truncate">{dateFrom ? format(parseDateParam(dateFrom), "MMM d, yyyy") : "Any date"}</span>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                {/* No date chosen yet -> the calendar opens on today's month
+                    with today's date highlighted by default, ready to pick. */}
+                <Calendar
+                  mode="single"
+                  selected={dateFrom ? parseDateParam(dateFrom) : undefined}
+                  defaultMonth={dateFrom ? parseDateParam(dateFrom) : new Date()}
+                  disabled={dateTo ? { after: parseDateParam(dateTo) } : undefined}
+                  onSelect={(date) => date && onDateFromChange(toDateParam(date))}
+                  autoFocus
+                />
+              </PopoverContent>
+            </Popover>
           </div>
           <div className="space-y-1">
-            <Label htmlFor="date-to" className="text-xs font-normal text-muted-foreground">To</Label>
-            <Input
-              id="date-to"
-              type="date"
-              value={dateTo}
-              min={dateFrom || undefined}
-              onChange={(e) => onDateToChange(e.target.value)}
-            />
+            <Label className="text-xs font-normal text-muted-foreground">To</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start px-2.5 text-left text-sm font-normal",
+                    !dateTo && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-1.5 h-3.5 w-3.5 shrink-0" />
+                  <span className="truncate">{dateTo ? format(parseDateParam(dateTo), "MMM d, yyyy") : "Any date"}</span>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={dateTo ? parseDateParam(dateTo) : undefined}
+                  defaultMonth={dateTo ? parseDateParam(dateTo) : new Date()}
+                  disabled={dateFrom ? { before: parseDateParam(dateFrom) } : undefined}
+                  onSelect={(date) => date && onDateToChange(toDateParam(date))}
+                  autoFocus
+                />
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
       </div>

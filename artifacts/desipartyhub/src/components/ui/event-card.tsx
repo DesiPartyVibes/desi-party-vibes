@@ -117,12 +117,11 @@ export function EventCard({ event, isFavorite = false, onToggleFavorite }: Event
             <span>{format(date, "EEEE, MMM d, yyyy 'at' h:mm a")}</span>
           </div>
 
+          {/* Card view stays to city/state only - the full venue/address
+              is reserved for the event detail page. */}
           <div className="flex items-center text-sm text-muted-foreground mb-3 gap-1">
             <MapPin className="h-4 w-4" />
-            <span className="line-clamp-1">
-              {event.venue ? `${event.venue}, ` : ""}
-              {event.city}, {event.state}
-            </span>
+            <span className="line-clamp-1">{event.city}, {event.state}</span>
           </div>
 
           <p className="text-sm text-muted-foreground line-clamp-2 h-10">{event.description}</p>
