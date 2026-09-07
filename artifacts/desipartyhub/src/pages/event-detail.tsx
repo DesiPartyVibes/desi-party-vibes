@@ -122,7 +122,7 @@ export default function EventDetail() {
                     {event.category}
                   </Badge>
                   {event.language && (
-                    <Badge variant="outline" className="text-xs bg-muted/50 border-secondary/40 text-secondary-foreground gap-1">
+                    <Badge variant="outline" className="text-xs bg-muted/50 border-secondary/40 text-secondary gap-1">
                       <Languages className="h-3 w-3" /> {event.language}
                     </Badge>
                   )}

@@ -102,7 +102,7 @@ export function EventCard({ event, isFavorite = false, onToggleFavorite }: Event
               {event.category}
             </Badge>
             {event.language && (
-              <Badge variant="outline" className="text-xs bg-muted/50 border-secondary/40 text-secondary-foreground">
+              <Badge variant="outline" className="text-xs bg-muted/50 border-secondary/40 text-secondary">
                 {event.language}
               </Badge>
             )}
