@@ -712,6 +712,16 @@ search?: string | null;
  */
 upcoming?: boolean | null;
 /**
+ * Only events on or after this date (YYYY-MM-DD)
+ * @nullable
+ */
+dateFrom?: string | null;
+/**
+ * Only events on or before this date (YYYY-MM-DD)
+ * @nullable
+ */
+dateTo?: string | null;
+/**
  * @nullable
  */
 vendorId?: number | null;

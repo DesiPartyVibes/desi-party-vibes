@@ -16,13 +16,46 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
-import { Search, SlidersHorizontal, Plus } from "lucide-react";
+import { Search, SlidersHorizontal, Plus, CalendarRange } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useToast } from "@/hooks/use-toast";
 import { EVENT_CATEGORIES } from "@/lib/event-categories";
 import { EVENT_LANGUAGES } from "@/lib/event-languages";
 import { CitySuggestInput } from "@/components/ui/city-suggest-input";
 import { POPULAR_METRO_CITIES } from "@/lib/us-cities";
+import { format, addDays, endOfMonth, nextSaturday, nextSunday, isSaturday, isSunday } from "date-fns";
+
+// yyyy-MM-dd, what a native <input type="date"> and the API both expect.
+const toDateParam = (d: Date) => format(d, "yyyy-MM-dd");
+
+// "Look for events in a particular time period" quick picks, so people
+// don't have to know exact dates - same idea as the Popular Cities chips.
+const DATE_PRESETS = [
+  {
+    label: "This Weekend",
+    getRange: (): [Date, Date] => {
+      const today = new Date();
+      if (isSaturday(today)) return [today, nextSunday(today)];
+      if (isSunday(today)) return [today, today];
+      const saturday = nextSaturday(today);
+      return [saturday, nextSunday(saturday)];
+    },
+  },
+  {
+    label: "This Month",
+    getRange: (): [Date, Date] => {
+      const today = new Date();
+      return [today, endOfMonth(today)];
+    },
+  },
+  {
+    label: "Next 30 Days",
+    getRange: (): [Date, Date] => {
+      const today = new Date();
+      return [today, addDays(today, 30)];
+    },
+  },
+] as const;
 
 interface FilterContentProps {
   category: string;
@@ -30,11 +63,16 @@ interface FilterContentProps {
   state: string;
   language: string;
   upcomingOnly: boolean;
+  dateFrom: string;
+  dateTo: string;
   onCategoryChange: (v: string) => void;
   onCityChange: (v: string) => void;
   onStateChange: (v: string) => void;
   onLanguageChange: (v: string) => void;
   onUpcomingChange: (v: boolean) => void;
+  onDateFromChange: (v: string) => void;
+  onDateToChange: (v: string) => void;
+  onDatePreset: (from: Date, to: Date) => void;
   onClear: () => void;
 }
 
@@ -44,11 +82,16 @@ function FilterContent({
   state,
   language,
   upcomingOnly,
+  dateFrom,
+  dateTo,
   onCategoryChange,
   onCityChange,
   onStateChange,
   onLanguageChange,
   onUpcomingChange,
+  onDateFromChange,
+  onDateToChange,
+  onDatePreset,
   onClear,
 }: FilterContentProps) {
   return (
@@ -81,6 +124,49 @@ function FilterContent({
             ))}
           </SelectContent>
         </Select>
+      </div>
+
+      <div className="space-y-2">
+        <Label className="flex items-center gap-1.5">
+          <CalendarRange className="h-3.5 w-3.5" /> When
+        </Label>
+        <div className="flex flex-wrap gap-1.5">
+          {DATE_PRESETS.map((preset) => (
+            <button
+              key={preset.label}
+              type="button"
+              onClick={() => {
+                const [from, to] = preset.getRange();
+                onDatePreset(from, to);
+              }}
+              className="text-xs px-2.5 py-1 rounded-full border border-border text-muted-foreground bg-background hover:border-primary/40 hover:text-primary transition-colors"
+            >
+              {preset.label}
+            </button>
+          ))}
+        </div>
+        <div className="grid grid-cols-2 gap-2 pt-1">
+          <div className="space-y-1">
+            <Label htmlFor="date-from" className="text-xs font-normal text-muted-foreground">From</Label>
+            <Input
+              id="date-from"
+              type="date"
+              value={dateFrom}
+              max={dateTo || undefined}
+              onChange={(e) => onDateFromChange(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="date-to" className="text-xs font-normal text-muted-foreground">To</Label>
+            <Input
+              id="date-to"
+              type="date"
+              value={dateTo}
+              min={dateFrom || undefined}
+              onChange={(e) => onDateToChange(e.target.value)}
+            />
+          </div>
+        </div>
       </div>
 
       <div className="space-y-2">
@@ -124,6 +210,8 @@ export default function Events() {
   const [state, setState] = useState(searchParams.get("state") || "");
   const [language, setLanguage] = useState(searchParams.get("language") || "all");
   const [upcomingOnly, setUpcomingOnly] = useState(true);
+  const [dateFrom, setDateFrom] = useState(searchParams.get("dateFrom") || "");
+  const [dateTo, setDateTo] = useState(searchParams.get("dateTo") || "");
 
   const { toast } = useToast();
   const { data: user } = useGetCurrentUser();
@@ -191,6 +279,8 @@ export default function Events() {
     ...(city ? { city } : {}),
     ...(state ? { state } : {}),
     ...(language && language !== "all" ? { language } : {}),
+    ...(dateFrom ? { dateFrom } : {}),
+    ...(dateTo ? { dateTo } : {}),
   };
 
   const { data: eventData, isLoading } = useListEvents(eventParams);
@@ -202,11 +292,32 @@ export default function Events() {
     setState("");
     setLanguage("all");
     setUpcomingOnly(true);
+    setDateFrom("");
+    setDateTo("");
   };
 
   const handlePickCity = (pickedCity: string, pickedState: string) => {
     setCity(pickedCity);
     setState(pickedState);
+  };
+
+  // Setting an explicit date narrows to that window, so "Upcoming only"
+  // (which silently means ">= now") is turned off to avoid a confusing
+  // empty result when someone picks a past range.
+  const handleDateFromChange = (v: string) => {
+    setDateFrom(v);
+    setUpcomingOnly(false);
+  };
+
+  const handleDateToChange = (v: string) => {
+    setDateTo(v);
+    setUpcomingOnly(false);
+  };
+
+  const handleDatePreset = (from: Date, to: Date) => {
+    setDateFrom(toDateParam(from));
+    setDateTo(toDateParam(to));
+    setUpcomingOnly(false);
   };
 
   const filterProps: FilterContentProps = {
@@ -215,11 +326,16 @@ export default function Events() {
     state,
     language,
     upcomingOnly,
+    dateFrom,
+    dateTo,
     onCategoryChange: setCategory,
     onCityChange: setCity,
     onStateChange: setState,
     onLanguageChange: setLanguage,
     onUpcomingChange: setUpcomingOnly,
+    onDateFromChange: handleDateFromChange,
+    onDateToChange: handleDateToChange,
+    onDatePreset: handleDatePreset,
     onClear: handleClear,
   };
 

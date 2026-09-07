@@ -695,6 +695,18 @@ paths:
           in: query
           schema:
             type: boolean
+        - name: dateFrom
+          in: query
+          description: Only events on or after this date (YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+        - name: dateTo
+          in: query
+          description: Only events on or before this date (YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
         - name: vendorId
           in: query
           schema:
