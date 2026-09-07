@@ -572,6 +572,14 @@ export const EventStatus = {
   rejected: 'rejected',
 } as const;
 
+export type EventSource = typeof EventSource[keyof typeof EventSource];
+
+
+export const EventSource = {
+  user: 'user',
+  admin_curated: 'admin_curated',
+} as const;
+
 export interface Event {
   id: number;
   title: string;
@@ -600,6 +608,7 @@ export interface Event {
   createdAt: string;
   /** @nullable */
   reviewedAt?: string | null;
+  source: EventSource;
 }
 
 export interface ListEventsResponse {
@@ -653,9 +662,28 @@ export interface AdminEvent {
   createdAt: string;
   /** @nullable */
   reviewedAt?: string | null;
+  source: EventSource;
   submittedByUserId: number;
   submitterName: string;
   submitterEmail: string;
+  /** @nullable */
+  sourceUrl?: string | null;
+}
+
+export interface CuratedEventInput {
+  title: string;
+  description: string;
+  category: string;
+  city: string;
+  state: string;
+  venue?: string;
+  language?: string;
+  eventDate: string;
+  endDate?: string;
+  imageUrl?: string;
+  ticketUrl: string;
+  additionalInfo?: string;
+  sourceUrl: string;
 }
 
 export type ListEventsParams = {

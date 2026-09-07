@@ -27,6 +27,7 @@ function formatEvent(e: typeof eventsTable.$inferSelect, vendorName: string | nu
     status: e.status,
     createdAt: e.createdAt.toISOString(),
     reviewedAt: e.reviewedAt ? e.reviewedAt.toISOString() : null,
+    source: e.source,
   };
 }
 

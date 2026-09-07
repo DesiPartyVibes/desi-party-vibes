@@ -1365,6 +1365,25 @@ paths:
                 items:
                   $ref: "#/components/schemas/AdminEvent"
 
+  /admin/events/curated:
+    post:
+      operationId: adminCreateCuratedEvent
+      tags: [admin]
+      summary: Add a pre-approved curated event (admin/import only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CuratedEventInput"
+      responses:
+        "201":
+          description: Curated event created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminEvent"
+
   /admin/events/{id}/approve:
     patch:
       operationId: adminApproveEvent
@@ -2310,6 +2329,9 @@ components:
           type: string
         reviewedAt:
           type: ["string", "null"]
+        source:
+          type: string
+          enum: [user, admin_curated]
 
     ListEventsResponse:
       type: object
@@ -2369,3 +2391,36 @@ components:
               type: string
             submitterEmail:
               type: string
+            sourceUrl:
+              type: ["string", "null"]
+
+    CuratedEventInput:
+      type: object
+      required: [title, description, category, city, state, eventDate, ticketUrl, sourceUrl]
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        venue:
+          type: string
+        language:
+          type: string
+        eventDate:
+          type: string
+        endDate:
+          type: string
+        imageUrl:
+          type: string
+        ticketUrl:
+          type: string
+        additionalInfo:
+          type: string
+        sourceUrl:
+          type: string

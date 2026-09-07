@@ -39,6 +39,15 @@ export const eventsTable = pgTable("events", {
   status: text("status", { enum: ["pending", "approved", "rejected"] }).notNull().default("pending"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+  // "user" = submitted through the normal signed-in-user flow above and
+  // subject to admin approval. "admin_curated" = added directly by an
+  // admin/import job (e.g. real-world Indian events found by research) -
+  // these skip the pending queue and are inserted pre-approved.
+  source: text("source", { enum: ["user", "admin_curated"] }).notNull().default("user"),
+  // Where a curated event's info was sourced from, for attribution and so
+  // a refresh job can tell which listing a given curated row came from.
+  // Null for normal user-submitted events.
+  sourceUrl: text("source_url"),
 });
 
 export const insertEventSchema = createInsertSchema(eventsTable).omit({
@@ -46,6 +55,7 @@ export const insertEventSchema = createInsertSchema(eventsTable).omit({
   createdAt: true,
   reviewedAt: true,
   status: true,
+  source: true,
 });
 export type InsertEvent = z.infer<typeof insertEventSchema>;
 export type Event = typeof eventsTable.$inferSelect;
